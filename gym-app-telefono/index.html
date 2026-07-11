@@ -84,6 +84,27 @@
     border-radius:12px; padding:12px; font-size:15px; font-weight:600}
   .water-btns .minus{flex:0 0 50px; color:var(--muted); font-size:20px}
 
+  /* peso */
+  .weight{background:var(--panel); border-radius:var(--radius); margin:4px 16px 12px; padding:16px}
+  .w-top{display:flex; justify-content:space-between; align-items:baseline}
+  .w-title{font-weight:700; font-size:17px}
+  .w-current{color:var(--muted); font-size:15px}
+  .w-current b{color:var(--txt); font-size:21px}
+  .w-sub{color:var(--muted); font-size:13px; margin-top:5px}
+  .w-delta{font-weight:700}
+  .w-delta.down{color:var(--green)}
+  .w-delta.up{color:var(--red)}
+  .w-due{color:#FFD479; font-size:13px; font-weight:600; margin-top:7px}
+  .w-btns{display:flex; gap:8px; margin-top:13px}
+  .w-btns button{flex:1; background:var(--row); color:var(--txt); border:none;
+    border-radius:12px; padding:11px; font-size:15px; font-weight:600}
+  .w-btns button.ghost{background:transparent; border:1px solid var(--row)}
+  .w-hist{margin-top:10px}
+  .w-hist .wr{display:flex; justify-content:space-between; align-items:center;
+    padding:9px 2px; border-top:1px solid rgba(255,255,255,.07); font-size:15px}
+  .w-hist .wr .wd{color:var(--muted); font-size:13px}
+  .w-hist .wr .wx{background:none; border:none; color:var(--red); font-size:12px; font-weight:600}
+
   /* workout */
   .wo-ex{margin:0 16px 16px; background:var(--row2); border-radius:var(--radius); overflow:hidden}
   .wo-head{display:flex; gap:14px; align-items:center; padding:14px}
@@ -155,6 +176,7 @@
   <header><div class="spacer44"></div><h1>Gigio Gym</h1><div class="spacer44"></div></header>
   <main>
     <div id="waterCard"></div>
+    <div id="weightCard"></div>
     <div id="homeList"></div>
     <div class="link-row">
       <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
@@ -307,6 +329,9 @@ function todayStr(){ return new Date().toISOString().slice(0,10); }
 let water = store.get('gg_water', null);
 if(!water || water.date !== todayStr()){ water = { date: todayStr(), ml: 0 }; store.set('gg_water', water); }
 let waterGoal = store.get('gg_water_goal', 2000);
+
+// peso: elenco misurazioni, più recente in cima
+let weights = store.get('gg_weights', []); // [{date, kg}]
 
 const state = { schedaId:null, workout:null, editor:null };
 
@@ -574,9 +599,79 @@ function changeWaterGoal(){
   if(litri > 0){ waterGoal = Math.round(litri * 1000); store.set('gg_water_goal', waterGoal); renderWater(); }
 }
 
+/* ================= PESO ================= */
+function daysAgo(iso){ return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
+function fmtDay(iso){ return new Date(iso).toLocaleDateString('it-IT',{day:'numeric', month:'short', year:'2-digit'}); }
+function agoLabel(iso){
+  const d = daysAgo(iso);
+  if(d <= 0) return 'oggi';
+  if(d === 1) return 'ieri';
+  return d + ' giorni fa';
+}
+function deltaHtml(delta){
+  if(delta === null || delta === undefined) return '';
+  const a = Math.abs(delta).toFixed(1);
+  if(delta < 0) return '<span class="w-delta down">▼ '+a+' kg</span> · ';
+  if(delta > 0) return '<span class="w-delta up">▲ '+a+' kg</span> · ';
+  return '<span class="w-delta">± 0 kg</span> · ';
+}
+function renderWeight(){
+  const el = document.getElementById('weightCard'); if(!el) return;
+  if(!weights.length){
+    el.innerHTML =
+      '<div class="weight"><div class="w-top"><div class="w-title">⚖️ Peso</div></div>'+
+      '<div class="w-sub">Segna il tuo peso per iniziare a monitorarlo.</div>'+
+      '<div class="w-btns"><button onclick="addWeight()">Segna peso</button></div></div>';
+    return;
+  }
+  const last = weights[0], prev = weights[1];
+  const delta = prev ? (last.kg - prev.kg) : null;
+  const due = daysAgo(last.date) >= 14
+    ? '<div class="w-due">🔔 Sono passate 2 settimane: aggiorna il peso</div>' : '';
+  el.innerHTML =
+    '<div class="weight">'+
+      '<div class="w-top"><div class="w-title">⚖️ Peso</div>'+
+      '<div class="w-current"><b>'+last.kg.toFixed(1)+'</b> kg</div></div>'+
+      '<div class="w-sub">'+ deltaHtml(delta) +'ultimo: '+fmtDay(last.date)+' ('+agoLabel(last.date)+')</div>'+
+      due +
+      '<div class="w-btns"><button onclick="addWeight()">Aggiorna peso</button>'+
+      '<button class="ghost" onclick="toggleWeightHistory()">Storico</button></div>'+
+      '<div class="w-hist" id="wHist"></div>'+
+    '</div>';
+}
+function addWeight(){
+  const v = prompt('Il tuo peso oggi (kg):', weights[0] ? weights[0].kg : '');
+  if(v === null) return;
+  const kg = parseFloat(String(v).replace(',', '.'));
+  if(!(kg > 0)){ toast('Inserisci un peso valido'); return; }
+  weights.unshift({ date: new Date().toISOString(), kg: Math.round(kg * 10) / 10 });
+  store.set('gg_weights', weights);
+  renderWeight();
+  toast('Peso aggiornato ⚖️');
+}
+function toggleWeightHistory(){
+  const h = document.getElementById('wHist'); if(!h) return;
+  if(h.innerHTML){ h.innerHTML = ''; return; }
+  h.innerHTML = weights.map((w, i) => {
+    const prev = weights[i + 1];
+    const delta = prev ? (w.kg - prev.kg) : null;
+    return '<div class="wr"><div><b>'+w.kg.toFixed(1)+' kg</b> '+ deltaHtml(delta).replace(' · ','') +
+      '<div class="wd">'+fmtDay(w.date)+'</div></div>'+
+      '<button class="wx" onclick="delWeight('+i+')">elimina</button></div>';
+  }).join('');
+}
+function delWeight(i){
+  if(!confirm('Eliminare questa misurazione?')) return;
+  weights.splice(i, 1);
+  store.set('gg_weights', weights);
+  renderWeight();
+  const h = document.getElementById('wHist'); if(h){ h.innerHTML = ''; toggleWeightHistory(); }
+}
+
 /* ================= AVVIO ================= */
 renderHome();
 renderWater();
+renderWeight();
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
