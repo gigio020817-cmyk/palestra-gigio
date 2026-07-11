@@ -220,6 +220,38 @@ const DEFAULT_SCHEDE = [{
       {name:'French press con manubri seduto due braccia', sets:4, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
     ]}
   ]
+},{
+  id:'s2', name:'Gambe',
+  groups:[
+    {label:'Superset', exercises:[
+      {name:'Front squat con bilanciere', sets:4, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
+      {name:'Stacco rumeno con bilanciere', sets:4, reps:'8 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Affondi in movimento con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Lunges/0.jpg'},
+      {name:'Hip thrust con bilanciere', sets:3, reps:'10 - 12', img:IMG+'Barbell_Hip_Thrust/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Sollevamento polpacci in piedi a corpo libero', sets:4, reps:'15 - 20', img:IMG+'Standing_Calf_Raises/0.jpg'},
+      {name:'Plank con oscillazioni dei fianchi', sets:4, reps:'00:45', img:IMG+'Plank/0.jpg'}
+    ]}
+  ]
+},{
+  id:'s3', name:'Schiena, dorsali posteriori, bicipiti',
+  groups:[
+    {label:'Superset', exercises:[
+      {name:'Lat machine presa inversa', sets:4, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
+      {name:'Rematore con kettlebell a un braccio', sets:4, reps:'8 - 12', img:IMG+'One-Arm_Kettlebell_Row/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Scrollate con bilanciere', sets:3, reps:'12 - 15', img:IMG+'Barbell_Shrug/0.jpg'},
+      {name:'Alzate posteriori con manubri', sets:3, reps:'12 - 15', img:IMG+'Seated_Bent-Over_Rear_Delt_Raise/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Curl con bilanciere EZ', sets:3, reps:'10 - 12', img:IMG+'EZ-Bar_Curl/0.jpg'},
+      {name:'Hammer curl con manubri', sets:3, reps:'10 - 12', img:IMG+'Hammer_Curls/0.jpg'}
+    ]}
+  ]
 }];
 
 const store = {
@@ -228,6 +260,13 @@ const store = {
 };
 let schede = store.get('gg_schede', null);
 if(!schede){ schede = DEFAULT_SCHEDE; store.set('gg_schede', schede); }
+// aggiunge una tantum le schede predefinite nuove a chi ha già l'app installata,
+// senza toccare le schede create dall'utente né lo storico
+if(!store.get('gg_seed_v2', false)){
+  DEFAULT_SCHEDE.forEach(d=>{ if(!schede.some(s=>s.id===d.id)) schede.push(d); });
+  store.set('gg_schede', schede);
+  store.set('gg_seed_v2', true);
+}
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
 
@@ -249,6 +288,7 @@ function imgTag(url){
   if(url) return '<img src="'+esc(url)+'" loading="lazy" onerror="this.outerHTML=\'<div class=ph>🏋️</div>\'">';
   return '<div class="ph">🏋️</div>';
 }
+function repsUnit(reps){ return /[:]|sec/i.test(String(reps)) ? '' : ' ripetizioni'; }
 
 /* ================= HOME ================= */
 function renderHome(){
@@ -276,7 +316,7 @@ function openScheda(id){
       '<div class="ex-row">'+
         '<div class="ex-img">'+imgTag(e.img)+'</div>'+
         '<div class="ex-info"><div class="ex-name">'+esc(e.name)+'</div>'+
-        '<div class="ex-meta">'+e.sets+' set x '+esc(e.reps)+' ripetizioni</div></div>'+
+        '<div class="ex-meta">'+e.sets+' set x '+esc(e.reps)+repsUnit(e.reps)+'</div></div>'+
       '</div>').join('') +'</div>'
   ).join('');
   show('scr-scheda');
@@ -309,7 +349,7 @@ function renderWorkout(){
     const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
     return '<div class="wo-ex">'+
       '<div class="wo-head"><div class="ex-img">'+imgTag(ex.img)+'</div>'+
-      '<div><div class="n">'+esc(ex.name)+'</div><div class="m">Obiettivo: '+esc(ex.reps)+' ripetizioni</div></div></div>'+
+      '<div><div class="n">'+esc(ex.name)+'</div><div class="m">Obiettivo: '+esc(ex.reps)+repsUnit(ex.reps)+'</div></div></div>'+
       hint +
       ex.sets.map((st,si)=>
         '<div class="set-line"><div class="num">'+(si+1)+'</div>'+
