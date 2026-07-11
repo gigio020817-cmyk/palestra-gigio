@@ -16,10 +16,16 @@
     --red:#E57373; --radius:14px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+  html{background:var(--bg);}
+  html,body{margin:0; padding:0; color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     font-size:17px; min-height:100%;}
   body{padding-bottom:env(safe-area-inset-bottom)}
+  /* sfondo sfumato elegante, strato fisso dietro tutto */
+  body::before{content:""; position:fixed; inset:0; z-index:-1;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(126,217,167,.10) 0%, rgba(126,217,167,0) 55%),
+      linear-gradient(160deg, #232739 0%, #272249 48%, #1b1730 100%);}
   .screen{display:none; min-height:100vh; flex-direction:column}
   .screen.active{display:flex}
   header{display:flex; align-items:center; gap:12px; padding:18px 16px 10px;
