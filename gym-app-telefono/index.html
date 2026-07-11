@@ -66,6 +66,19 @@
   .btn-ghost{flex:1; background:var(--panel); color:var(--txt); border:1px solid var(--row);
     border-radius:var(--radius); padding:13px; font-size:16px; font-weight:600}
 
+  /* acqua */
+  .water{background:var(--panel); border-radius:var(--radius); margin:12px 16px 4px; padding:16px}
+  .water-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:11px}
+  .water-title{font-weight:700; font-size:17px}
+  .water-amt{color:var(--muted); font-size:15px}
+  .water-amt b{color:#5FB6FF; font-size:17px}
+  .water-bar{height:14px; background:var(--bg); border-radius:9px; overflow:hidden; margin-bottom:13px}
+  .water-fill{height:100%; background:linear-gradient(90deg,#3E8BFF,#7ED2FF); border-radius:9px; transition:width .3s}
+  .water-btns{display:flex; gap:8px}
+  .water-btns button{flex:1; background:var(--row); color:var(--txt); border:none;
+    border-radius:12px; padding:12px; font-size:15px; font-weight:600}
+  .water-btns .minus{flex:0 0 50px; color:var(--muted); font-size:20px}
+
   /* workout */
   .wo-ex{margin:0 16px 16px; background:var(--row2); border-radius:var(--radius); overflow:hidden}
   .wo-head{display:flex; gap:14px; align-items:center; padding:14px}
@@ -136,6 +149,7 @@
 <div class="screen active" id="scr-home">
   <header><div class="spacer44"></div><h1>Gigio Gym</h1><div class="spacer44"></div></header>
   <main>
+    <div id="waterCard"></div>
     <div id="homeList"></div>
     <div class="link-row">
       <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
@@ -282,6 +296,12 @@ if(!store.get('gg_seed_v2', false)){
 }
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
+
+// acqua: si azzera ogni nuovo giorno
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+let water = store.get('gg_water', null);
+if(!water || water.date !== todayStr()){ water = { date: todayStr(), ml: 0 }; store.set('gg_water', water); }
+let waterGoal = store.get('gg_water_goal', 2000);
 
 const state = { schedaId:null, workout:null, editor:null };
 
@@ -514,8 +534,44 @@ function deleteScheda(){
 }
 function exitEditor(){ show(state.editor && !state.editor._isNew ? 'scr-scheda' : 'scr-home'); }
 
+/* ================= ACQUA ================= */
+function renderWater(){
+  const el = document.getElementById('waterCard'); if(!el) return;
+  if(water.date !== todayStr()){ water = { date: todayStr(), ml: 0 }; store.set('gg_water', water); }
+  const pct = Math.min(100, Math.round(water.ml / waterGoal * 100));
+  const litri = (water.ml/1000).toFixed(water.ml % 1000 === 0 ? 0 : 1);
+  el.innerHTML =
+    '<div class="water">'+
+      '<div class="water-top">'+
+        '<div class="water-title">💧 Acqua oggi</div>'+
+        '<div class="water-amt" onclick="changeWaterGoal()"><b>'+litri+' L</b> / '+(waterGoal/1000)+' L</div>'+
+      '</div>'+
+      '<div class="water-bar"><div class="water-fill" style="width:'+pct+'%"></div></div>'+
+      '<div class="water-btns">'+
+        '<button class="minus" onclick="addWater(-250)">−</button>'+
+        '<button onclick="addWater(250)">＋ Bicchiere</button>'+
+        '<button onclick="addWater(500)">＋ Bottiglia</button>'+
+      '</div>'+
+    '</div>';
+}
+function addWater(ml){
+  if(water.date !== todayStr()){ water = { date: todayStr(), ml: 0 }; }
+  const wasBelow = water.ml < waterGoal;
+  water.ml = Math.max(0, water.ml + ml);
+  store.set('gg_water', water);
+  renderWater();
+  if(ml > 0 && wasBelow && water.ml >= waterGoal) toast('Obiettivo acqua raggiunto! 💧');
+}
+function changeWaterGoal(){
+  const v = prompt('Obiettivo giornaliero (litri):', waterGoal/1000);
+  if(v === null) return;
+  const litri = parseFloat(String(v).replace(',', '.'));
+  if(litri > 0){ waterGoal = Math.round(litri * 1000); store.set('gg_water_goal', waterGoal); renderWater(); }
+}
+
 /* ================= AVVIO ================= */
 renderHome();
+renderWater();
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
