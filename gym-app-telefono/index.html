@@ -21,11 +21,14 @@
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     font-size:17px; min-height:100%;}
   body{padding-bottom:env(safe-area-inset-bottom)}
-  /* sfondo sfumato elegante, strato fisso dietro tutto */
+  /* sfondo Goku, strato fisso dietro tutto, scurito per leggibilità */
   body::before{content:""; position:fixed; inset:0; z-index:-1;
-    background:
-      radial-gradient(120% 80% at 50% 0%, rgba(126,217,167,.10) 0%, rgba(126,217,167,0) 55%),
-      linear-gradient(160deg, #232739 0%, #272249 48%, #1b1730 100%);}
+    background-image:
+      linear-gradient(180deg, rgba(18,20,34,.74) 0%, rgba(16,18,30,.82) 55%, rgba(12,14,26,.92) 100%),
+      url('goku.jpg');
+    background-size: cover, cover;
+    background-position: center top, center top;
+    background-repeat: no-repeat, no-repeat;}
   .screen{display:none; min-height:100vh; flex-direction:column}
   .screen.active{display:flex}
   header{display:flex; align-items:center; gap:12px; padding:18px 16px 10px;

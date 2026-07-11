@@ -1,5 +1,5 @@
-const CACHE = 'gigio-gym-v5';
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'gigio-gym-v6';
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg'];
 
 self.addEventListener('install', (e) => {
   // allSettled: se un singolo file non si scarica, l'installazione NON fallisce tutta
