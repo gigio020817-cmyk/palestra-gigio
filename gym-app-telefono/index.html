@@ -55,6 +55,30 @@
   .ex-name{font-weight:600; font-size:17px}
   .ex-meta{color:var(--muted); font-size:15px}
 
+  /* scheda (versione più curata) */
+  .sc-group{margin:0 16px 4px}
+  .sc-glabel{font-size:13px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--green); margin:18px 2px 9px; text-shadow:0 1px 6px rgba(0,0,0,.7)}
+  .sc-card{background:var(--row2); border-radius:var(--radius); overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.28)}
+  .sc-ex{display:flex; align-items:stretch; border-bottom:1px solid rgba(0,0,0,.18)}
+  .sc-ex:last-child{border-bottom:none}
+  .sc-ex .ex-img{width:90px; min-height:90px}
+  .sc-info{flex:1; min-width:0; padding:13px 14px; display:flex; flex-direction:column;
+    justify-content:center; gap:9px}
+  .sc-name{font-weight:600; font-size:17px; line-height:1.25}
+  .sc-badges{display:flex; gap:7px; flex-wrap:wrap}
+  .sc-badge{background:var(--bg); color:var(--txt); font-size:13px; font-weight:700;
+    padding:4px 11px; border-radius:20px}
+  .sc-badge.alt{background:transparent; border:1px solid var(--row); color:var(--muted); font-weight:600}
+
+  /* allenamento: info serie + controlli */
+  .wo-hinfo{min-width:0}
+  .wo-prog{color:var(--green); font-size:13px; font-weight:700; margin-top:4px}
+  .wo-setctl{display:flex; gap:8px; padding:6px 14px 12px}
+  .wo-setctl button{flex:1; background:var(--row); color:var(--txt); border:none;
+    border-radius:11px; padding:10px; font-size:14px; font-weight:600}
+
   .cta{position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom));
     background:var(--green); color:#173324; border:none; border-radius:32px; padding:17px;
     font-size:19px; font-weight:700; width:calc(100% - 32px); z-index:6}
@@ -374,13 +398,18 @@ function openScheda(id){
   const s = schede.find(x=>x.id===id); if(!s) return;
   document.getElementById('schedaTitle').textContent = s.name;
   document.getElementById('schedaBody').innerHTML = s.groups.map(g=>
-    '<div class="group-label">'+esc(g.label||'Superset')+'</div>'+
-    '<div class="group">'+ g.exercises.map(e=>
-      '<div class="ex-row">'+
-        '<div class="ex-img">'+imgTag(e.img)+'</div>'+
-        '<div class="ex-info"><div class="ex-name">'+esc(e.name)+'</div>'+
-        '<div class="ex-meta">'+e.sets+' set x '+esc(e.reps)+repsUnit(e.reps)+'</div></div>'+
-      '</div>').join('') +'</div>'
+    '<div class="sc-group">'+
+      '<div class="sc-glabel">'+esc(g.label||'Superset')+'</div>'+
+      '<div class="sc-card">'+ g.exercises.map(e=>
+        '<div class="sc-ex">'+
+          '<div class="ex-img">'+imgTag(e.img)+'</div>'+
+          '<div class="sc-info"><div class="sc-name">'+esc(e.name)+'</div>'+
+          '<div class="sc-badges">'+
+            '<span class="sc-badge">'+e.sets+' serie</span>'+
+            '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
+          '</div></div>'+
+        '</div>').join('') +'</div>'+
+    '</div>'
   ).join('');
   show('scr-scheda');
 }
@@ -410,9 +439,12 @@ function renderWorkout(){
   document.getElementById('woBody').innerHTML = w.log.map((ex,ei)=>{
     const last = lastLog[ex.name];
     const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
+    const doneCount = ex.sets.filter(s=>s.done).length;
     return '<div class="wo-ex">'+
       '<div class="wo-head"><div class="ex-img">'+imgTag(ex.img)+'</div>'+
-      '<div><div class="n">'+esc(ex.name)+'</div><div class="m">Obiettivo: '+esc(ex.reps)+repsUnit(ex.reps)+'</div></div></div>'+
+      '<div class="wo-hinfo"><div class="n">'+esc(ex.name)+'</div>'+
+      '<div class="m">'+ex.sets.length+' serie · obiettivo '+esc(ex.reps)+repsUnit(ex.reps)+'</div>'+
+      '<div class="wo-prog">'+doneCount+'/'+ex.sets.length+' completate</div></div></div>'+
       hint +
       ex.sets.map((st,si)=>
         '<div class="set-line"><div class="num">'+(si+1)+'</div>'+
@@ -421,8 +453,18 @@ function renderWorkout(){
         '<input type="number" inputmode="numeric" placeholder="rip" value="'+esc(st.reps)+'" onchange="setVal('+ei+','+si+',\'reps\',this.value)">'+
         '<label>rip</label>'+
         '<button class="set-done'+(st.done?' on':'')+'" onclick="toggleDone('+ei+','+si+')">✓</button></div>'
-      ).join('')+'</div>';
+      ).join('')+
+      '<div class="wo-setctl">'+
+        '<button onclick="removeSet('+ei+')">− Serie</button>'+
+        '<button onclick="addSet('+ei+')">＋ Serie</button>'+
+      '</div>'+
+    '</div>';
   }).join('');
+}
+function addSet(ei){ state.workout.log[ei].sets.push({kg:'', reps:'', done:false}); renderWorkout(); }
+function removeSet(ei){
+  const s = state.workout.log[ei].sets;
+  if(s.length > 1){ s.pop(); renderWorkout(); } else { toast('Serve almeno una serie'); }
 }
 function setVal(ei,si,field,val){ state.workout.log[ei].sets[si][field] = val; }
 function toggleDone(ei,si){
