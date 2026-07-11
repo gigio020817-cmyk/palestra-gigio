@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#232739">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gigio Gym</title>
+<style>
+  :root{
+    --bg:#232739; --panel:#2B3049; --row:#3A4060; --row2:#343A57;
+    --txt:#FFFFFF; --muted:#A7ADC6; --green:#7ED9A7; --green-dark:#4CAF7D;
+    --red:#E57373; --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:17px; min-height:100%;}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .screen{display:none; min-height:100vh; flex-direction:column}
+  .screen.active{display:flex}
+  header{display:flex; align-items:center; gap:12px; padding:18px 16px 10px;
+    padding-top:calc(18px + env(safe-area-inset-top)); position:sticky; top:0; background:var(--bg); z-index:5}
+  header h1{font-size:22px; font-weight:700; margin:0; flex:1; text-align:center}
+  .btn-round{width:44px; height:44px; border-radius:50%; background:var(--panel); border:none;
+    color:var(--txt); font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0}
+  .spacer44{width:44px; flex-shrink:0}
+  main{flex:1; padding:0 0 120px}
+  .pad{padding:0 16px}
+
+  /* group + exercise rows (stile screenshot) */
+  .group-label{font-size:19px; font-weight:700; padding:18px 16px 10px}
+  .group{background:var(--row2); margin-bottom:4px}
+  .ex-row{display:flex; align-items:stretch; border-bottom:1px solid rgba(0,0,0,.15)}
+  .ex-row:last-child{border-bottom:none}
+  .ex-img{width:96px; min-height:96px; background:#fff; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; overflow:hidden}
+  .ex-img img{width:100%; height:100%; object-fit:contain}
+  .ex-img .ph{font-size:34px}
+  .ex-info{flex:1; padding:14px 16px; display:flex; flex-direction:column; justify-content:center; gap:4px}
+  .ex-name{font-weight:600; font-size:17px}
+  .ex-meta{color:var(--muted); font-size:15px}
+
+  .cta{position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom));
+    background:var(--green); color:#173324; border:none; border-radius:32px; padding:17px;
+    font-size:19px; font-weight:700; width:calc(100% - 32px); z-index:6}
+  .cta:disabled{opacity:.4}
+
+  /* cards home */
+  .card{background:var(--row); border-radius:var(--radius); padding:18px 16px; margin:0 16px 12px;
+    display:flex; align-items:center; gap:12px}
+  .card .t{flex:1}
+  .card .t b{display:block; font-size:18px}
+  .card .t span{color:var(--muted); font-size:14px}
+  .chev{color:var(--muted); font-size:20px}
+  .link-row{display:flex; gap:10px; margin:8px 16px 16px}
+  .btn-ghost{flex:1; background:var(--panel); color:var(--txt); border:1px solid var(--row);
+    border-radius:var(--radius); padding:13px; font-size:16px; font-weight:600}
+
+  /* workout */
+  .wo-ex{margin:0 16px 16px; background:var(--row2); border-radius:var(--radius); overflow:hidden}
+  .wo-head{display:flex; gap:14px; align-items:center; padding:14px}
+  .wo-head .ex-img{border-radius:10px; width:84px; min-height:84px}
+  .wo-head .n{font-size:19px; font-weight:700}
+  .wo-head .m{color:var(--muted); font-size:14px; margin-top:3px}
+  .set-line{display:flex; align-items:center; gap:8px; padding:10px 14px; border-top:1px solid rgba(0,0,0,.15)}
+  .set-line .num{width:26px; color:var(--muted); font-weight:600}
+  .set-line input{width:70px; background:var(--bg); border:1px solid var(--row); border-radius:9px;
+    color:var(--txt); font-size:17px; padding:9px 8px; text-align:center}
+  .set-line label{color:var(--muted); font-size:13px}
+  .set-done{margin-left:auto; width:40px; height:40px; border-radius:50%; border:2px solid var(--muted);
+    background:transparent; color:transparent; font-size:19px; flex-shrink:0}
+  .set-done.on{background:var(--green); border-color:var(--green); color:#173324}
+  .last-hint{color:var(--muted); font-size:13px; padding:2px 14px 10px}
+
+  /* timer sheet */
+  #timerSheet{position:fixed; left:0; right:0; bottom:0; background:var(--panel);
+    border-radius:22px 22px 0 0; padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(110%); transition:transform .25s ease; z-index:20; text-align:center;
+    box-shadow:0 -8px 30px rgba(0,0,0,.4)}
+  #timerSheet.open{transform:translateY(0)}
+  #timerVal{font-size:56px; font-weight:800; font-variant-numeric:tabular-nums; margin:6px 0 14px}
+  .timer-btns{display:flex; gap:10px}
+  .timer-btns button{flex:1; border:none; border-radius:14px; padding:14px; font-size:16px; font-weight:700}
+  #tPlus{background:var(--row); color:var(--txt)}
+  #tSkip{background:var(--green); color:#173324}
+
+  /* storico */
+  .sess{margin:0 16px 12px; background:var(--row); border-radius:var(--radius); padding:14px 16px}
+  .sess .d{font-weight:700; margin-bottom:2px}
+  .sess .s{color:var(--muted); font-size:14px}
+  .sess .detail{margin-top:10px; display:none; border-top:1px solid rgba(0,0,0,.2); padding-top:10px}
+  .sess.open .detail{display:block}
+  .detail .exl{margin-bottom:8px}
+  .detail .exl b{font-size:15px}
+  .detail .exl span{display:block; color:var(--muted); font-size:14px}
+
+  /* editor */
+  .field{margin:0 16px 14px}
+  .field label{display:block; color:var(--muted); font-size:14px; margin-bottom:6px}
+  .field input{width:100%; background:var(--panel); border:1px solid var(--row); border-radius:12px;
+    color:var(--txt); font-size:17px; padding:13px}
+  .ed-group{margin:0 16px 14px; background:var(--row2); border-radius:var(--radius); padding:12px}
+  .ed-group h3{margin:2px 4px 10px; font-size:16px; color:var(--muted); display:flex; justify-content:space-between; align-items:center}
+  .ed-group h3 button{background:none; border:none; color:var(--red); font-size:14px; font-weight:600}
+  .ed-ex{background:var(--bg); border-radius:12px; padding:10px; margin-bottom:8px}
+  .ed-ex input{width:100%; background:var(--panel); border:1px solid var(--row); border-radius:9px;
+    color:var(--txt); font-size:15px; padding:9px; margin-bottom:6px}
+  .ed-ex .r{display:flex; gap:6px}
+  .ed-ex .r input{width:33%}
+  .ed-ex .del{background:none; border:none; color:var(--red); font-size:13px; font-weight:600; padding:2px}
+  .add-line{width:100%; background:none; border:1px dashed var(--muted); color:var(--muted);
+    border-radius:12px; padding:11px; font-size:15px; margin-top:2px}
+  .btn-add-group{display:block; margin:0 16px 14px; width:calc(100% - 32px)}
+  .danger{color:var(--red); background:none; border:none; font-size:15px; font-weight:600; margin:8px auto 0; display:block}
+
+  .empty{color:var(--muted); text-align:center; padding:40px 30px; line-height:1.5}
+  #toast{position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:100px;
+    background:#111524; color:#fff; padding:11px 18px; border-radius:24px; font-size:15px;
+    opacity:0; transition:all .25s; z-index:30; pointer-events:none; white-space:nowrap}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div class="screen active" id="scr-home">
+  <header><div class="spacer44"></div><h1>Gigio Gym</h1><div class="spacer44"></div></header>
+  <main>
+    <div id="homeList"></div>
+    <div class="link-row">
+      <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
+      <button class="btn-ghost" onclick="show('scr-history'); renderHistory()">Storico</button>
+    </div>
+  </main>
+</div>
+
+<!-- ============ SCHEDA ============ -->
+<div class="screen" id="scr-scheda">
+  <header>
+    <button class="btn-round" onclick="show('scr-home')">‹</button>
+    <h1 id="schedaTitle"></h1>
+    <button class="btn-round" onclick="openEditor(state.schedaId)" title="Modifica">✎</button>
+  </header>
+  <main><div id="schedaBody"></div></main>
+  <button class="cta" onclick="startWorkout()">Comincia allenamento</button>
+</div>
+
+<!-- ============ ALLENAMENTO ============ -->
+<div class="screen" id="scr-workout">
+  <header>
+    <button class="btn-round" onclick="confirmExit()">‹</button>
+    <h1 id="woTitle"></h1>
+    <div class="spacer44"></div>
+  </header>
+  <main><div id="woBody"></div></main>
+  <button class="cta" id="woFinish" onclick="finishWorkout()">Termina allenamento</button>
+</div>
+
+<!-- ============ STORICO ============ -->
+<div class="screen" id="scr-history">
+  <header>
+    <button class="btn-round" onclick="show('scr-home')">‹</button>
+    <h1>Storico</h1>
+    <div class="spacer44"></div>
+  </header>
+  <main><div id="histBody"></div></main>
+</div>
+
+<!-- ============ EDITOR ============ -->
+<div class="screen" id="scr-editor">
+  <header>
+    <button class="btn-round" onclick="exitEditor()">‹</button>
+    <h1 id="edTitle">Nuova scheda</h1>
+    <div class="spacer44"></div>
+  </header>
+  <main>
+    <div class="field">
+      <label>Nome scheda</label>
+      <input id="edName" placeholder="Es. Schiena e bicipiti">
+    </div>
+    <div id="edGroups"></div>
+    <button class="add-line btn-add-group" onclick="edAddGroup()">+ Aggiungi superset / gruppo</button>
+    <button class="danger" id="edDelete" onclick="deleteScheda()" style="display:none">Elimina scheda</button>
+  </main>
+  <button class="cta" onclick="saveEditor()">Salva scheda</button>
+</div>
+
+<!-- timer -->
+<div id="timerSheet">
+  <div style="color:var(--muted); font-size:15px; font-weight:600">RECUPERO</div>
+  <div id="timerVal">1:30</div>
+  <div class="timer-btns">
+    <button id="tPlus" onclick="timerPlus()">+30 sec</button>
+    <button id="tSkip" onclick="timerStop()">Salta</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= DATI ================= */
+const IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+const DEFAULT_SCHEDE = [{
+  id:'s1', name:'Petto, spalle e tricipiti',
+  groups:[
+    {label:'Superset', exercises:[
+      {name:'Chest press', sets:4, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
+      {name:'Lento avanti con bilanciere seduto', sets:4, reps:'8 - 10', img:IMG+'Barbell_Shoulder_Press/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Distensioni su panca piana con manubri', sets:4, reps:'8 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
+      {name:'Alzate laterali con manubri', sets:4, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
+    ]},
+    {label:'Superset', exercises:[
+      {name:'Croci alla pectoral machine', sets:4, reps:'10 - 12', img:IMG+'Butterfly/0.jpg'},
+      {name:'French press con manubri seduto due braccia', sets:4, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
+    ]}
+  ]
+}];
+
+const store = {
+  get(k, fallback){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } },
+  set(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+};
+let schede = store.get('gg_schede', null);
+if(!schede){ schede = DEFAULT_SCHEDE; store.set('gg_schede', schede); }
+let sessions = store.get('gg_sessions', []);
+let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
+
+const state = { schedaId:null, workout:null, editor:null };
+
+/* ================= NAVIGAZIONE ================= */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function imgTag(url){
+  if(url) return '<img src="'+esc(url)+'" loading="lazy" onerror="this.outerHTML=\'<div class=ph>🏋️</div>\'">';
+  return '<div class="ph">🏋️</div>';
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const el = document.getElementById('homeList');
+  if(!schede.length){
+    el.innerHTML = '<div class="empty">Nessuna scheda.<br>Creane una con “Nuova scheda”.</div>';
+    return;
+  }
+  el.innerHTML = schede.map(s=>{
+    const nEx = s.groups.reduce((a,g)=>a+g.exercises.length,0);
+    return '<div class="card" onclick="openScheda(\''+s.id+'\')">'+
+      '<div class="t"><b>'+esc(s.name)+'</b><span>'+nEx+' esercizi · '+s.groups.length+' gruppi</span></div>'+
+      '<div class="chev">›</div></div>';
+  }).join('');
+}
+
+/* ================= SCHEDA ================= */
+function openScheda(id){
+  state.schedaId = id;
+  const s = schede.find(x=>x.id===id); if(!s) return;
+  document.getElementById('schedaTitle').textContent = s.name;
+  document.getElementById('schedaBody').innerHTML = s.groups.map(g=>
+    '<div class="group-label">'+esc(g.label||'Superset')+'</div>'+
+    '<div class="group">'+ g.exercises.map(e=>
+      '<div class="ex-row">'+
+        '<div class="ex-img">'+imgTag(e.img)+'</div>'+
+        '<div class="ex-info"><div class="ex-name">'+esc(e.name)+'</div>'+
+        '<div class="ex-meta">'+e.sets+' set x '+esc(e.reps)+' ripetizioni</div></div>'+
+      '</div>').join('') +'</div>'
+  ).join('');
+  show('scr-scheda');
+}
+
+/* ================= ALLENAMENTO ================= */
+function startWorkout(){
+  const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
+  const exercises = [];
+  s.groups.forEach(g=>g.exercises.forEach(e=>exercises.push(e)));
+  state.workout = {
+    schedaId:s.id, schedaName:s.name, start:Date.now(),
+    log: exercises.map(e=>({
+      name:e.name, img:e.img, reps:e.reps,
+      sets: Array.from({length:e.sets}, (_,i)=>{
+        const last = (lastLog[e.name]||[])[i] || {};
+        return { kg:last.kg ?? '', reps:last.reps ?? '', done:false };
+      })
+    }))
+  };
+  document.getElementById('woTitle').textContent = s.name;
+  renderWorkout();
+  show('scr-workout');
+}
+
+function renderWorkout(){
+  const w = state.workout;
+  document.getElementById('woBody').innerHTML = w.log.map((ex,ei)=>{
+    const last = lastLog[ex.name];
+    const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
+    return '<div class="wo-ex">'+
+      '<div class="wo-head"><div class="ex-img">'+imgTag(ex.img)+'</div>'+
+      '<div><div class="n">'+esc(ex.name)+'</div><div class="m">Obiettivo: '+esc(ex.reps)+' ripetizioni</div></div></div>'+
+      hint +
+      ex.sets.map((st,si)=>
+        '<div class="set-line"><div class="num">'+(si+1)+'</div>'+
+        '<input type="number" inputmode="decimal" placeholder="kg" value="'+esc(st.kg)+'" onchange="setVal('+ei+','+si+',\'kg\',this.value)">'+
+        '<label>kg</label>'+
+        '<input type="number" inputmode="numeric" placeholder="rip" value="'+esc(st.reps)+'" onchange="setVal('+ei+','+si+',\'reps\',this.value)">'+
+        '<label>rip</label>'+
+        '<button class="set-done'+(st.done?' on':'')+'" onclick="toggleDone('+ei+','+si+')">✓</button></div>'
+      ).join('')+'</div>';
+  }).join('');
+}
+function setVal(ei,si,field,val){ state.workout.log[ei].sets[si][field] = val; }
+function toggleDone(ei,si){
+  const st = state.workout.log[ei].sets[si];
+  st.done = !st.done;
+  event.target.classList.toggle('on', st.done);
+  if(st.done) timerStart(90);
+}
+
+function finishWorkout(){
+  const w = state.workout;
+  const anyDone = w.log.some(e=>e.sets.some(s=>s.done || s.kg || s.reps));
+  if(!anyDone){ if(!confirm('Nessun set registrato. Terminare comunque?')) return; }
+  // salva "ultima volta" per prefill
+  w.log.forEach(e=>{
+    const filled = e.sets.filter(s=>s.kg||s.reps);
+    if(filled.length) lastLog[e.name] = e.sets.map(s=>({kg:s.kg, reps:s.reps}));
+  });
+  store.set('gg_last', lastLog);
+  sessions.unshift({
+    date:new Date().toISOString(), scheda:w.schedaName,
+    durataMin: Math.max(1, Math.round((Date.now()-w.start)/60000)),
+    log: w.log.map(e=>({name:e.name, sets:e.sets.filter(s=>s.kg||s.reps||s.done)}))
+  });
+  store.set('gg_sessions', sessions);
+  state.workout = null;
+  timerStop();
+  toast('Allenamento salvato 💪');
+  show('scr-home'); renderHome();
+}
+function confirmExit(){
+  if(confirm('Uscire senza salvare l\'allenamento?')){ state.workout=null; timerStop(); show('scr-scheda'); }
+}
+
+/* ================= TIMER ================= */
+let tLeft = 0, tInt = null;
+function timerStart(sec){
+  tLeft = sec;
+  document.getElementById('timerSheet').classList.add('open');
+  timerTick();
+  clearInterval(tInt);
+  tInt = setInterval(()=>{ tLeft--; timerTick();
+    if(tLeft<=0){ timerStop(); beep(); if(navigator.vibrate) navigator.vibrate([300,150,300]); }
+  },1000);
+}
+function timerTick(){
+  const m = Math.floor(Math.max(0,tLeft)/60), s = Math.max(0,tLeft)%60;
+  document.getElementById('timerVal').textContent = m+':'+String(s).padStart(2,'0');
+}
+function timerPlus(){ tLeft += 30; timerTick(); }
+function timerStop(){ clearInterval(tInt); document.getElementById('timerSheet').classList.remove('open'); }
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.35,0.7].forEach(t=>{
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.setValueAtTime(0.35, ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+0.28);
+      o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+0.3);
+    });
+  }catch(e){}
+}
+
+/* ================= STORICO ================= */
+function renderHistory(){
+  const el = document.getElementById('histBody');
+  if(!sessions.length){ el.innerHTML = '<div class="empty">Ancora nessun allenamento salvato.<br>Il primo lo scrivi tu 💪</div>'; return; }
+  el.innerHTML = sessions.map((s,i)=>{
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString('it-IT',{weekday:'short', day:'numeric', month:'short'})+' · '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    const detail = s.log.filter(e=>e.sets.length).map(e=>
+      '<div class="exl"><b>'+esc(e.name)+'</b><span>'+ e.sets.map(x=>(x.kg||'–')+'kg × '+(x.reps||'–')).join(' · ') +'</span></div>'
+    ).join('') || '<div class="exl"><span>Nessun set registrato</span></div>';
+    return '<div class="sess" onclick="this.classList.toggle(\'open\')">'+
+      '<div class="d">'+esc(s.scheda)+'</div>'+
+      '<div class="s">'+dateStr+' · '+s.durataMin+' min</div>'+
+      '<div class="detail">'+detail+'</div></div>';
+  }).join('');
+}
+
+/* ================= EDITOR ================= */
+function openEditor(id){
+  const s = id ? schede.find(x=>x.id===id) : null;
+  state.editor = s ? JSON.parse(JSON.stringify(s))
+                   : { id:'s'+Date.now(), name:'', groups:[{label:'Superset', exercises:[edNewEx()]}] };
+  state.editor._isNew = !s;
+  document.getElementById('edTitle').textContent = s ? 'Modifica scheda' : 'Nuova scheda';
+  document.getElementById('edName').value = state.editor.name;
+  document.getElementById('edDelete').style.display = s ? 'block' : 'none';
+  renderEditor();
+  show('scr-editor');
+}
+function edNewEx(){ return {name:'', sets:4, reps:'8 - 12', img:''}; }
+function renderEditor(){
+  document.getElementById('edGroups').innerHTML = state.editor.groups.map((g,gi)=>
+    '<div class="ed-group"><h3>Gruppo '+(gi+1)+' (superset)'+
+    '<button onclick="edDelGroup('+gi+')">Rimuovi</button></h3>'+
+    g.exercises.map((e,xi)=>
+      '<div class="ed-ex">'+
+      '<input placeholder="Nome esercizio" value="'+esc(e.name)+'" onchange="edSet('+gi+','+xi+',\'name\',this.value)">'+
+      '<div class="r">'+
+      '<input type="number" placeholder="Set" value="'+esc(e.sets)+'" onchange="edSet('+gi+','+xi+',\'sets\',this.value)">'+
+      '<input placeholder="Rip (es. 8 - 12)" value="'+esc(e.reps)+'" onchange="edSet('+gi+','+xi+',\'reps\',this.value)" style="width:67%">'+
+      '</div>'+
+      '<input placeholder="URL immagine (opzionale)" value="'+esc(e.img)+'" onchange="edSet('+gi+','+xi+',\'img\',this.value)">'+
+      '<button class="del" onclick="edDelEx('+gi+','+xi+')">Elimina esercizio</button>'+
+      '</div>'
+    ).join('')+
+    '<button class="add-line" onclick="edAddEx('+gi+')">+ Esercizio</button>'+
+    '</div>'
+  ).join('');
+}
+function edSet(gi,xi,f,v){ state.editor.groups[gi].exercises[xi][f] = f==='sets' ? Math.max(1, parseInt(v)||1) : v; }
+function edAddGroup(){ state.editor.groups.push({label:'Superset', exercises:[edNewEx()]}); renderEditor(); }
+function edDelGroup(gi){ state.editor.groups.splice(gi,1); renderEditor(); }
+function edAddEx(gi){ state.editor.groups[gi].exercises.push(edNewEx()); renderEditor(); }
+function edDelEx(gi,xi){ state.editor.groups[gi].exercises.splice(xi,1); renderEditor(); }
+function saveEditor(){
+  const name = document.getElementById('edName').value.trim();
+  if(!name){ toast('Dai un nome alla scheda'); return; }
+  state.editor.name = name;
+  state.editor.groups = state.editor.groups
+    .map(g=>({label:g.label, exercises:g.exercises.filter(e=>e.name.trim())}))
+    .filter(g=>g.exercises.length);
+  if(!state.editor.groups.length){ toast('Aggiungi almeno un esercizio'); return; }
+  delete state.editor._isNew;
+  const i = schede.findIndex(x=>x.id===state.editor.id);
+  if(i>=0) schede[i] = state.editor; else schede.push(state.editor);
+  store.set('gg_schede', schede);
+  toast('Scheda salvata');
+  renderHome(); show('scr-home');
+}
+function deleteScheda(){
+  if(!confirm('Eliminare questa scheda?')) return;
+  schede = schede.filter(x=>x.id!==state.editor.id);
+  store.set('gg_schede', schede);
+  renderHome(); show('scr-home');
+}
+function exitEditor(){ show(state.editor && !state.editor._isNew ? 'scr-scheda' : 'scr-home'); }
+
+/* ================= AVVIO ================= */
+renderHome();
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
