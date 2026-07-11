@@ -21,10 +21,10 @@
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     font-size:17px; min-height:100%;}
   body{padding-bottom:env(safe-area-inset-bottom)}
-  /* sfondo Goku, strato fisso dietro tutto, scurito per leggibilità */
+  /* sfondo Goku, strato fisso dietro tutto, velo scuro leggero per leggibilità */
   body::before{content:""; position:fixed; inset:0; z-index:-1;
     background-image:
-      linear-gradient(180deg, rgba(18,20,34,.74) 0%, rgba(16,18,30,.82) 55%, rgba(12,14,26,.92) 100%),
+      linear-gradient(180deg, rgba(16,18,30,.38) 0%, rgba(16,18,30,.48) 50%, rgba(12,14,26,.66) 100%),
       url('goku.jpg');
     background-size: cover, cover;
     background-position: center top, center top;
@@ -32,8 +32,10 @@
   .screen{display:none; min-height:100vh; flex-direction:column}
   .screen.active{display:flex}
   header{display:flex; align-items:center; gap:12px; padding:18px 16px 10px;
-    padding-top:calc(18px + env(safe-area-inset-top)); position:sticky; top:0; background:var(--bg); z-index:5}
-  header h1{font-size:22px; font-weight:700; margin:0; flex:1; text-align:center}
+    padding-top:calc(18px + env(safe-area-inset-top)); position:sticky; top:0;
+    background:rgba(20,22,38,.35); backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px); z-index:5}
+  header h1{font-size:22px; font-weight:700; margin:0; flex:1; text-align:center; text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .group-label{text-shadow:0 1px 6px rgba(0,0,0,.7)}
   .btn-round{width:44px; height:44px; border-radius:50%; background:var(--panel); border:none;
     color:var(--txt); font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0}
   .spacer44{width:44px; flex-shrink:0}
