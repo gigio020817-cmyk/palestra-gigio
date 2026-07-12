@@ -25,7 +25,7 @@
   body::before{content:""; position:fixed; inset:0; z-index:-1;
     background-image:
       linear-gradient(180deg, rgba(16,18,30,.38) 0%, rgba(16,18,30,.48) 50%, rgba(12,14,26,.66) 100%),
-      url('goku.jpg');
+      var(--bg-image, url('goku.jpg'));
     background-size: cover, cover;
     background-position: center top, center top;
     background-repeat: no-repeat, no-repeat;}
@@ -463,6 +463,8 @@
   <main><div id="foodHistBody"></div></main>
 </div>
 
+<input type="file" accept="image/*" id="bgInput" style="display:none" onchange="onBgPicked(event)">
+
 <!-- messaggi personali -->
 <div id="msgSheet">
   <div class="msg-box">
@@ -552,7 +554,7 @@ const DEFAULT_SCHEDE = [{
 
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Le altre (schede, sessioni) sono condivise.
-const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message']);
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg']);
 let profiles = null, activeProfile = null;
 function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
 function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
@@ -1365,7 +1367,8 @@ function renderProfileBar(){
   const el = document.getElementById('profileBar'); if(!el) return;
   el.innerHTML = '<div class="pbar">' + profiles.map(function(p){
     return '<button class="pchip'+(p === activeProfile ? ' on' : '')+'" onclick="switchProfile(\''+p.replace(/'/g,"\\'")+'\')">'+esc(p)+'</button>';
-  }).join('') + '<button class="pchip add" onclick="addProfile()" title="Aggiungi persona">＋</button></div>';
+  }).join('') + '<button class="pchip add" onclick="addProfile()" title="Aggiungi persona">＋</button>'+
+    '<button class="pchip add" onclick="chooseBackground()" title="Cambia sfondo">🖼️</button></div>';
   updateTrainingVisibility();
 }
 // l'allenamento è solo per il primo profilo (Gigio); negli altri viene nascosto
@@ -1391,6 +1394,7 @@ function switchProfile(name){
   if(profiles.indexOf(name) < 0) return;
   activeProfile = name; store.set('gg_active_profile', name);
   reloadProfileData();
+  applyBackground();
   renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderFoodHero();
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
@@ -1444,8 +1448,48 @@ function addProfile(){
   if(profiles.indexOf(n) < 0){ profiles.push(n); store.set('gg_profiles', profiles); }
   switchProfile(n);
 }
+/* sfondo per-profilo */
+function applyBackground(){
+  const bg = store.get('gg_bg', '');
+  let img;
+  if(bg) img = 'url("' + bg + '")';
+  else if(activeProfile === profiles[0]) img = "url('goku.jpg')";      // Gigio: Goku di default
+  else img = 'linear-gradient(160deg,#232739 0%,#272249 48%,#1b1730 100%)';  // altri: sfumatura elegante
+  document.documentElement.style.setProperty('--bg-image', img);
+}
+function pickBackground(){ document.getElementById('bgInput').click(); }
+function onBgPicked(e){
+  const file = e.target.files && e.target.files[0]; e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    const img = new Image();
+    img.onload = function(){
+      const max = 1080; let w = img.width, h = img.height;
+      if(w > h){ if(w > max){ h = Math.round(h * max / w); w = max; } }
+      else { if(h > max){ w = Math.round(w * max / h); h = max; } }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      let dataUrl; try{ dataUrl = c.toDataURL('image/jpeg', 0.82); }catch(err){ toast('Immagine non valida'); return; }
+      store.set('gg_bg', dataUrl);
+      if(store.get('gg_bg','') !== dataUrl){ toast('Immagine troppo grande, riprova con una più piccola'); return; }
+      applyBackground(); toast('Sfondo aggiornato ✓');
+    };
+    img.onerror = function(){ toast('Immagine non valida'); };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function resetBackground(){ store.set('gg_bg', ''); applyBackground(); toast('Sfondo predefinito'); }
+function chooseBackground(){
+  if(store.get('gg_bg', '')){
+    if(confirm('OK per scegliere una nuova foto · Annulla per rimuovere lo sfondo attuale')) pickBackground();
+    else resetBackground();
+  } else pickBackground();
+}
 
 /* ================= AVVIO ================= */
+applyBackground();
 renderProfileBar();
 renderMsgCard();
 renderHome();
