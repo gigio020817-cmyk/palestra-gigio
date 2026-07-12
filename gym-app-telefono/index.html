@@ -339,7 +339,8 @@
   <main>
     <div id="foodBody"></div>
     <div class="link-row">
-      <button class="btn-ghost" onclick="show('scr-foodhistory'); renderFoodHistory()">Storico &amp; grafici</button>
+      <button class="btn-ghost" onclick="openFoodGoals()">🎯 Obiettivi &amp; calcolatore</button>
+      <button class="btn-ghost" onclick="show('scr-foodhistory'); renderFoodHistory()">📈 Storico</button>
     </div>
   </main>
 </div>
@@ -401,6 +402,7 @@
     </div>
     <div class="ed-group">
       <h3>Calcolatore automatico</h3>
+      <div class="field"><label>Nome (facoltativo)</label><input id="cName" placeholder="Es. Gigio"></div>
       <div class="field"><label>Peso (kg)</label><input id="cWeight" type="number" inputmode="decimal"></div>
       <div class="field"><label>Altezza (cm)</label><input id="cHeight" type="number" inputmode="decimal"></div>
       <div class="field"><label>Età</label><input id="cAge" type="number" inputmode="numeric"></div>
@@ -947,7 +949,9 @@ function renderFood(){
   const el = document.getElementById('foodBody'); if(!el) return;
   const day = foodDay(foodDate); const t = dayTotals(foodDate);
   const kpct = foodGoals.kcal > 0 ? Math.min(100, Math.round(t.k/foodGoals.kcal*100)) : 0;
-  let html = '<div class="fdaynav"><button onclick="foodChangeDay(-1)">‹</button>'+
+  const prof = store.get('gg_food_profile', null);
+  const greet = (prof && prof.name) ? '<div style="font-size:16px;font-weight:700;margin:10px 18px 2px;text-shadow:0 1px 6px rgba(0,0,0,.5)">Ciao, '+esc(prof.name)+' 👋</div>' : '';
+  let html = greet + '<div class="fdaynav"><button onclick="foodChangeDay(-1)">‹</button>'+
     '<div class="fd-lab">'+dayLabel(foodDate)+'</div><button onclick="foodChangeDay(1)">›</button></div>';
   html += '<div class="fsum"><div class="fsum-k"><b>'+t.k+' kcal</b><span class="goal">obiettivo '+foodGoals.kcal+'</span></div>'+
     '<div class="kfill"><div style="width:'+kpct+'%"></div></div>'+
@@ -1159,6 +1163,7 @@ function openFoodGoals(){
   document.getElementById('gC').value = foodGoals.carbs;
   document.getElementById('gF').value = foodGoals.fat;
   const pr = store.get('gg_food_profile', null);
+  document.getElementById('cName').value = (pr && pr.name) || '';
   if(pr){
     document.getElementById('cWeight').value = pr.weight || '';
     document.getElementById('cHeight').value = pr.height || '';
@@ -1184,7 +1189,7 @@ function calcGoals(){
   document.getElementById('gP').value = protein;
   document.getElementById('gC').value = carbs;
   document.getElementById('gF').value = fat;
-  store.set('gg_food_profile', { weight:w, height:h, age:a, sex:sex, activity:String(act), goal:goal });
+  store.set('gg_food_profile', { name:document.getElementById('cName').value.trim(), weight:w, height:h, age:a, sex:sex, activity:String(act), goal:goal });
   toast('Valori proposti — puoi modificarli e salvare');
 }
 function saveGoals(){
@@ -1195,6 +1200,9 @@ function saveGoals(){
     fat: Math.round(num(document.getElementById('gF').value))
   };
   store.set('gg_food_goals', foodGoals);
+  const prof = store.get('gg_food_profile', {}) || {};
+  prof.name = document.getElementById('cName').value.trim();
+  store.set('gg_food_profile', prof);
   toast('Obiettivi salvati'); renderFoodHero(); renderFood(); show('scr-food');
 }
 function renderFoodHistory(){
