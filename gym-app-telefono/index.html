@@ -417,7 +417,12 @@
         <option value="dimagrire">Dimagrire</option>
         <option value="mantenere">Mantenere</option>
         <option value="massa">Massa</option></select></div>
+      <div class="field"><label>Ritmo (per deficit / surplus)</label><select id="cRate">
+        <option value="leggero">Leggero</option>
+        <option value="moderato">Moderato</option>
+        <option value="aggressivo">Aggressivo</option></select></div>
       <button class="add-line" onclick="calcGoals()">Calcola e proponi valori</button>
+      <div id="calcInfo" class="fmsg" style="text-align:left; padding:8px 4px 2px; display:none"></div>
     </div>
   </main>
   <button class="cta" onclick="saveGoals()">Salva obiettivi</button>
@@ -847,6 +852,9 @@ function renderWeight(){
   }
   const last = weights[0], prev = weights[1];
   const delta = prev ? (last.kg - prev.kg) : null;
+  const first = weights[weights.length - 1];
+  const since = weights.length >= 2
+    ? '<div class="w-sub">📉 Dall\'inizio ('+fmtDay(first.date)+'): '+deltaHtml(last.kg - first.kg).replace(' · ','')+'</div>' : '';
   const due = daysAgo(last.date) >= 14
     ? '<div class="w-due">🔔 Sono passate 2 settimane: aggiorna il peso</div>' : '';
   el.innerHTML =
@@ -854,7 +862,7 @@ function renderWeight(){
       '<div class="w-top"><div class="w-title">⚖️ Peso</div>'+
       '<div class="w-current"><b>'+last.kg.toFixed(1)+'</b> kg</div></div>'+
       '<div class="w-sub">'+ deltaHtml(delta) +'ultimo: '+fmtDay(last.date)+' ('+agoLabel(last.date)+')</div>'+
-      due +
+      since + due +
       '<div class="w-btns"><button onclick="addWeight()">Aggiorna peso</button>'+
       '<button class="ghost" onclick="toggleWeightHistory()">Storico</button></div>'+
       '<div class="w-hist" id="wHist"></div>'+
@@ -1164,6 +1172,7 @@ function openFoodGoals(){
   document.getElementById('gF').value = foodGoals.fat;
   const pr = store.get('gg_food_profile', null);
   document.getElementById('cName').value = (pr && pr.name) || '';
+  document.getElementById('cRate').value = (pr && pr.rate) || 'moderato';
   if(pr){
     document.getElementById('cWeight').value = pr.weight || '';
     document.getElementById('cHeight').value = pr.height || '';
@@ -1172,16 +1181,22 @@ function openFoodGoals(){
     document.getElementById('cAct').value = pr.activity || '1.55';
     document.getElementById('cGoal').value = pr.goal || 'mantenere';
   }
+  // collega il monitoraggio peso: usa l'ultimo peso registrato, se c'è
+  if(weights.length && weights[0].kg) document.getElementById('cWeight').value = weights[0].kg;
+  const info = document.getElementById('calcInfo'); if(info) info.style.display = 'none';
   show('scr-foodgoals');
 }
 function calcGoals(){
   const w = num(document.getElementById('cWeight').value), h = num(document.getElementById('cHeight').value), a = num(document.getElementById('cAge').value);
   const sex = document.getElementById('cSex').value, act = num(document.getElementById('cAct').value), goal = document.getElementById('cGoal').value;
   if(!(w > 0 && h > 0 && a > 0)){ toast('Inserisci peso, altezza ed età'); return; }
+  const rate = document.getElementById('cRate').value;
   const bmr = 10*w + 6.25*h - 5*a + (sex === 'm' ? 5 : -161);
-  let kcal = bmr * act;
-  if(goal === 'dimagrire') kcal *= 0.82; else if(goal === 'massa') kcal *= 1.10;
-  kcal = Math.round(kcal);
+  const tdee = Math.round(bmr * act);
+  let factor = 1;
+  if(goal === 'dimagrire') factor = rate === 'leggero' ? 0.90 : rate === 'aggressivo' ? 0.75 : 0.82;
+  else if(goal === 'massa') factor = rate === 'leggero' ? 1.06 : rate === 'aggressivo' ? 1.15 : 1.10;
+  const kcal = Math.round(tdee * factor);
   const protein = Math.round(2 * w);
   const fat = Math.round(0.9 * w);
   const carbs = Math.max(0, Math.round((kcal - (protein*4 + fat*9)) / 4));
@@ -1189,7 +1204,15 @@ function calcGoals(){
   document.getElementById('gP').value = protein;
   document.getElementById('gC').value = carbs;
   document.getElementById('gF').value = fat;
-  store.set('gg_food_profile', { name:document.getElementById('cName').value.trim(), weight:w, height:h, age:a, sex:sex, activity:String(act), goal:goal });
+  const diff = kcal - tdee;
+  const info = document.getElementById('calcInfo');
+  if(info){
+    info.style.display = 'block';
+    const etichetta = diff < 0 ? 'deficit' : diff > 0 ? 'surplus' : 'mantenimento';
+    info.innerHTML = 'Mantenimento ≈ <b>'+tdee+'</b> kcal · Obiettivo <b>'+kcal+'</b> kcal'+
+      (diff !== 0 ? '<br>'+(diff<0?'−':'+')+Math.abs(diff)+' kcal/giorno ('+etichetta+')' : '');
+  }
+  store.set('gg_food_profile', { name:document.getElementById('cName').value.trim(), weight:w, height:h, age:a, sex:sex, activity:String(act), goal:goal, rate:rate });
   toast('Valori proposti — puoi modificarli e salvare');
 }
 function saveGoals(){
