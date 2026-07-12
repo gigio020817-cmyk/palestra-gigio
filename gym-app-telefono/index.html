@@ -1043,24 +1043,55 @@ async function doFoodSearch(){
     body.insertAdjacentHTML('afterbegin', '<div class="fmsg">📴 Sei offline: la ricerca non è disponibile.<br>Usa i tuoi recenti/preferiti qui sotto.</div>');
   }
 }
+const FOOD_STOP = new Set(['di','e','con','al','all','alla','allo','agli','ai','la','il','lo','le','i','gli',
+  'un','uno','una','del','della','dello','dei','degli','delle','a','da','in','su','per','the','of']);
+function foodWords(q){ return q.toLowerCase().split(/[\s'’,._\-]+/).filter(w => w.length > 1 && !FOOD_STOP.has(w)); }
+function rankFood(items, q){
+  const ql = q.toLowerCase().trim();
+  const words = foodWords(q);
+  const scored = items.map(x => {
+    const nm = x.name.toLowerCase();
+    let s = 0, matched = 0;
+    if(ql && nm.indexOf(ql) > -1) s += 100;                    // frase intera presente
+    words.forEach(w => { if(nm.indexOf(w) > -1){ s += 15; matched++; } });
+    if(words.length && matched === words.length) s += 40;      // tutte le parole chiave
+    s -= Math.min(15, nm.length / 8);                          // preferisci nomi puliti
+    return { x:x, s:s, matched:matched };
+  });
+  return scored.filter(o => !words.length || o.matched > 0)    // scarta i totalmente fuori tema
+    .sort((a,b) => b.s - a.s).map(o => o.x);
+}
 function mapOff(p){
   const n = p.nutriments || {};
   let kcal = n['energy-kcal_100g'];
   if(kcal == null && n['energy_100g'] != null) kcal = n['energy_100g'] / 4.184;
-  let name = (p.product_name || '').trim(); if(!name) return null;
+  let name = (p.product_name_it || p.product_name || '').trim(); if(!name) return null;
   if(p.brands) name += ' (' + String(p.brands).split(',')[0].trim() + ')';
   return { name:name, k:r1(kcal), p:r1(n.proteins_100g), c:r1(n.carbohydrates_100g), f:r1(n.fat_100g), code:p.code || '' };
 }
-async function offSearch(q){
-  const url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) +
-    '&search_simple=1&action=process&json=1&page_size=25&fields=product_name,brands,nutriments,code';
+async function offSearchRaw(q, italyOnly){
+  let url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) +
+    '&search_simple=1&action=process&json=1&page_size=50&sort_by=unique_scans_n&lc=it' +
+    '&fields=product_name,product_name_it,brands,nutriments,code';
+  if(italyOnly) url += '&tagtype_0=countries&tag_contains_0=contains&tag_0=italy';
   const r = await fetch(url); if(!r.ok) throw new Error('http');
   const d = await r.json();
-  return (d.products || []).map(mapOff).filter(Boolean);
+  const items = (d.products || []).map(mapOff).filter(Boolean).filter(x => x.k > 0);  // solo con calorie
+  return rankFood(items, q).slice(0, 25);
+}
+async function offSearch(q){
+  let items = await offSearchRaw(q, true);                     // prima i prodotti italiani
+  if(items.length < 4){                                        // se pochi, completa col globale
+    const glob = await offSearchRaw(q, false);
+    const seen = new Set(items.map(x => x.code || x.name));
+    glob.forEach(x => { const k = x.code || x.name; if(!seen.has(k)){ seen.add(k); items.push(x); } });
+    items = rankFood(items, q).slice(0, 25);
+  }
+  return items;
 }
 async function offBarcode(code){
   const url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) +
-    '.json?fields=product_name,brands,nutriments,code';
+    '.json?fields=product_name,product_name_it,brands,nutriments,code';
   const r = await fetch(url); if(!r.ok) throw new Error('http');
   const d = await r.json();
   return (d && d.status === 1 && d.product) ? mapOff(d.product) : null;
