@@ -278,11 +278,13 @@
     <div id="foodHero"></div>
     <div id="waterCard"></div>
     <div id="weightCard"></div>
-    <div class="home-sec">🏋️ Allenamento</div>
-    <div id="homeList"></div>
-    <div class="link-row">
-      <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
-      <button class="btn-ghost" onclick="show('scr-history'); renderHistory()">Storico</button>
+    <div id="trainingSection">
+      <div class="home-sec">🏋️ Allenamento</div>
+      <div id="homeList"></div>
+      <div class="link-row">
+        <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
+        <button class="btn-ghost" onclick="show('scr-history'); renderHistory()">Storico</button>
+      </div>
     </div>
   </main>
 </div>
@@ -1333,6 +1335,13 @@ function renderProfileBar(){
   el.innerHTML = '<div class="pbar">' + profiles.map(function(p){
     return '<button class="pchip'+(p === activeProfile ? ' on' : '')+'" onclick="switchProfile(\''+p.replace(/'/g,"\\'")+'\')">'+esc(p)+'</button>';
   }).join('') + '<button class="pchip add" onclick="addProfile()" title="Aggiungi persona">＋</button></div>';
+  updateTrainingVisibility();
+}
+// l'allenamento è solo per il primo profilo (Gigio); negli altri viene nascosto
+function trainingEnabled(){ return activeProfile === profiles[0]; }
+function updateTrainingVisibility(){
+  const el = document.getElementById('trainingSection');
+  if(el) el.style.display = trainingEnabled() ? '' : 'none';
 }
 function reloadProfileData(){
   weights   = store.get('gg_weights', []);
