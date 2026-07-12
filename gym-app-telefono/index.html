@@ -208,6 +208,11 @@
     box-shadow:0 12px 44px rgba(0,0,0,.5)}
   .msg-title{font-size:18px; font-weight:700; margin-bottom:12px}
   .msg-text{font-size:17px; line-height:1.55; white-space:pre-wrap; word-break:break-word; margin-bottom:18px}
+  .msg-list{max-height:55vh; overflow-y:auto; margin-bottom:16px}
+  .msg-item{background:var(--row2); border-radius:12px; padding:12px 14px; margin-bottom:8px}
+  .msg-item-t{font-size:16px; line-height:1.45; white-space:pre-wrap; word-break:break-word}
+  .msg-item-d{color:var(--muted); font-size:12px; margin-top:7px; display:flex; justify-content:space-between; align-items:center}
+  .msg-item-d button{background:none; border:none; color:var(--red); font-size:12px; font-weight:600}
   .msg-btns{display:flex; gap:8px}
   .msg-btns button{flex:1; border:none; border-radius:12px; padding:13px 6px; font-size:14px; font-weight:700; background:var(--row); color:var(--txt)}
   .msg-btns button.send{background:var(--green); color:#173324}
@@ -458,14 +463,13 @@
   <main><div id="foodHistBody"></div></main>
 </div>
 
-<!-- messaggio personale -->
+<!-- messaggi personali -->
 <div id="msgSheet">
   <div class="msg-box">
-    <div class="msg-title">💌 Messaggio</div>
-    <div id="msgText" class="msg-text"></div>
+    <div class="msg-title">💌 Messaggi</div>
+    <div id="msgList" class="msg-list"></div>
     <div class="msg-btns">
-      <button class="send" onclick="shareMessage()">📤 Invia</button>
-      <button onclick="editMessage()">✏️ Modifica</button>
+      <button class="send" onclick="addMessage()">➕ Aggiungi</button>
       <button onclick="closeMessage()">Chiudi</button>
     </div>
   </div>
@@ -957,7 +961,7 @@ let foodDiary  = store.get('gg_food_diary', {});   // {data: {colazione:[], pran
 let foodRecent = store.get('gg_food_recent', []);  // [{name,k,p,c,f,code}]
 let foodCustom = store.get('gg_food_custom', []);  // [{name,k,p,c,f}]
 let foodDishes = store.get('gg_food_dishes', []);  // [{name,k,p,c,f}]
-let profileMsg = store.get('gg_message', '');      // messaggio personale del profilo
+let profileMsgs = normalizeMsgs(store.get('gg_message', []));  // elenco messaggi del profilo
 let foodDate = todayStr();
 let foodMeal = 'colazione';
 let foodSearchResults = [];
@@ -1380,7 +1384,7 @@ function reloadProfileData(){
   foodRecent= store.get('gg_food_recent', []);
   foodCustom= store.get('gg_food_custom', []);
   foodDishes= store.get('gg_food_dishes', []);
-  profileMsg= store.get('gg_message', '');
+  profileMsgs= normalizeMsgs(store.get('gg_message', []));
   foodDate  = todayStr();
 }
 function switchProfile(name){
@@ -1391,56 +1395,48 @@ function switchProfile(name){
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
 }
-/* messaggio personale del profilo */
+/* messaggi del profilo (elenco che si accumula) */
+function normalizeMsgs(v){
+  if(typeof v === 'string') return v.trim() ? [{ text:v, date:new Date().toISOString() }] : [];
+  return Array.isArray(v) ? v : [];
+}
 function renderMsgCard(){
   const el = document.getElementById('msgCard'); if(!el) return;
-  if(activeProfile === profiles[0]){ el.innerHTML = ''; return; }  // sul profilo principale (Gigio) niente messaggio
-  const has = profileMsg && profileMsg.trim();
+  if(activeProfile === profiles[0]){ el.innerHTML = ''; return; }  // sul profilo principale (Gigio) niente messaggi
+  const n = profileMsgs.length;
+  const sub = n ? (n === 1 ? '1 messaggio · tocca per leggere' : n + ' messaggi · tocca per leggere')
+                : 'Nessun messaggio — tocca per aggiungerne uno';
   el.innerHTML = '<div class="foodhero" onclick="openMessage()" '+
     'style="background:linear-gradient(135deg,rgba(229,115,115,.20),rgba(126,217,167,.12)),var(--panel)">'+
-    '<div class="fh-ic">💌</div><div class="fh-t"><b>Messaggio</b>'+
-    '<span>'+(has ? 'Tocca per leggerlo' : 'Nessun messaggio — tocca per scriverne uno')+'</span></div>'+
+    '<div class="fh-ic">💌</div><div class="fh-t"><b>Messaggi</b><span>'+sub+'</span></div>'+
     '<div class="chev">›</div></div>';
 }
+function renderMsgList(){
+  const el = document.getElementById('msgList'); if(!el) return;
+  if(!profileMsgs.length){ el.innerHTML = '<div class="fmsg">Nessun messaggio.<br>Tocca "Aggiungi" per scriverne uno.</div>'; return; }
+  el.innerHTML = profileMsgs.map(function(m,i){
+    return '<div class="msg-item"><div class="msg-item-t">'+esc(m.text)+'</div>'+
+      '<div class="msg-item-d"><span>'+fmtDay(m.date)+'</span><button onclick="delMessage('+i+')">elimina</button></div></div>';
+  }).join('');
+}
 function openMessage(){
-  profileMsg = store.get('gg_message', '');   // rileggi sempre dalla memoria salvata
-  if(!(profileMsg && profileMsg.trim())){ editMessage(); return; }
-  document.getElementById('msgText').textContent = profileMsg;
+  profileMsgs = normalizeMsgs(store.get('gg_message', []));
+  renderMsgList();
   document.getElementById('msgSheet').classList.add('open');
 }
 function closeMessage(){ document.getElementById('msgSheet').classList.remove('open'); }
-function shareMessage(){
-  const msg = store.get('gg_message', '');
-  if(!msg || !msg.trim()){ toast('Scrivi prima un messaggio'); return; }
-  const url = location.origin + location.pathname + '#msg=' + encodeURIComponent(msg);
-  if(navigator.share){
-    navigator.share({ title: 'Un messaggio per te 💌', text: msg, url: url }).catch(function(){});
-  } else if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){ toast('Link copiato — incollalo in chat'); }, function(){ prompt('Copia questo link e invialo:', url); });
-  } else {
-    prompt('Copia questo link e invialo:', url);
-  }
+function addMessage(){
+  const v = prompt('Scrivi il messaggio:'); if(v === null) return;
+  const t = v.trim(); if(!t) return;
+  profileMsgs.unshift({ text:t, date:new Date().toISOString() });
+  store.set('gg_message', profileMsgs);
+  renderMsgList(); renderMsgCard();
 }
-// se apri un link con un messaggio dentro, lo mostra e lo salva nel profilo attivo
-function checkIncomingMessage(){
-  const h = location.hash || '';
-  const m = h.match(/[#&]msg=([^&]*)/);
-  if(!m) return;
-  let txt = ''; try{ txt = decodeURIComponent(m[1].replace(/\+/g,' ')); }catch(e){ txt = m[1]; }
-  try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
-  if(!txt.trim()) return;
-  profileMsg = txt; store.set('gg_message', txt); renderMsgCard();
-  document.getElementById('msgText').textContent = txt;
-  document.getElementById('msgSheet').classList.add('open');
-}
-function editMessage(){
-  const v = prompt('Scrivi il messaggio:', profileMsg || '');
-  if(v === null) return;
-  profileMsg = v.trim();
-  store.set('gg_message', profileMsg);
-  renderMsgCard();
-  if(profileMsg){ document.getElementById('msgText').textContent = profileMsg; document.getElementById('msgSheet').classList.add('open'); }
-  else closeMessage();
+function delMessage(i){
+  if(!confirm('Eliminare questo messaggio?')) return;
+  profileMsgs.splice(i,1);
+  store.set('gg_message', profileMsgs);
+  renderMsgList(); renderMsgCard();
 }
 function addProfile(){
   const name = prompt('Nome della persona:'); if(name === null) return;
@@ -1452,7 +1448,6 @@ function addProfile(){
 /* ================= AVVIO ================= */
 renderProfileBar();
 renderMsgCard();
-checkIncomingMessage();
 renderHome();
 renderWater();
 renderWeight();

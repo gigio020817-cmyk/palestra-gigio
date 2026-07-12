@@ -1,4 +1,4 @@
-const CACHE = 'gigio-gym-v20';
+const CACHE = 'gigio-gym-v21';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg'];
 
 self.addEventListener('install', (e) => {
