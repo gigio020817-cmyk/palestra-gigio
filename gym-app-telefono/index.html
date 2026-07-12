@@ -192,6 +192,14 @@
     opacity:0; transition:all .25s; z-index:30; pointer-events:none; white-space:nowrap}
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
+  /* profili (persone) */
+  .pbar{display:flex; gap:8px; margin:12px 16px 2px; overflow-x:auto; padding-bottom:2px}
+  .pbar::-webkit-scrollbar{display:none}
+  .pchip{background:var(--panel); color:var(--muted); border:1px solid var(--row); border-radius:20px;
+    padding:8px 16px; font-size:15px; font-weight:600; white-space:nowrap; flex-shrink:0}
+  .pchip.on{background:var(--green); color:#173324; border-color:var(--green)}
+  .pchip.add{padding:8px 13px; font-size:18px; color:var(--txt)}
+
   /* ============ ALIMENTAZIONE ============ */
   .home-sec{font-size:14px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
     color:var(--muted); margin:18px 18px 8px; text-shadow:0 1px 6px rgba(0,0,0,.6)}
@@ -266,6 +274,7 @@
 <div class="screen active" id="scr-home">
   <header><div class="spacer44"></div><h1>Gigio Gym</h1><div class="spacer44"></div></header>
   <main>
+    <div id="profileBar"></div>
     <div id="foodHero"></div>
     <div id="waterCard"></div>
     <div id="weightCard"></div>
@@ -510,13 +519,17 @@ const DEFAULT_SCHEDE = [{
 }];
 
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
+// chiavi che appartengono al SINGOLO profilo (persona). Le altre (schede, sessioni) sono condivise.
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile']);
+let profiles = null, activeProfile = null;
+function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
+function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
 const store = {
-  get(k, fallback){
+  get(k, fallback){ k = pk(k);
     try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){}
     return (k in _mem) ? _mem[k] : fallback;
   },
-  set(k, v){
-    _mem[k] = v;
+  set(k, v){ k = pk(k); _mem[k] = v;
     try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
   }
 };
@@ -531,6 +544,17 @@ if(!store.get('gg_seed_v2', false)){
 }
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
+
+// ---- profili (persone): peso, acqua e alimentazione sono per-profilo ----
+profiles = store.get('gg_profiles', null);
+if(!profiles || !profiles.length){ profiles = ['Gigio','Erjola']; store.set('gg_profiles', profiles); }
+activeProfile = store.get('gg_active_profile', null);
+if(!activeProfile || profiles.indexOf(activeProfile) < 0){ activeProfile = profiles[0]; store.set('gg_active_profile', activeProfile); }
+// una-tantum: sposta i dati esistenti (chiavi vecchie) dentro il primo profilo, così non si perde nulla
+if(!store.get('gg_migrated_profiles', false)){
+  PROFILE_KEYS.forEach(function(k){ const old = rawGet(k); if(old !== undefined) store.set(k, old); });
+  store.set('gg_migrated_profiles', true);
+}
 
 // acqua: si azzera ogni nuovo giorno
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -1303,7 +1327,42 @@ function manualBarcode(){
   if(code && code.trim()) onBarcode(code.trim());
 }
 
+/* ================= PROFILI (PERSONE) ================= */
+function renderProfileBar(){
+  const el = document.getElementById('profileBar'); if(!el) return;
+  el.innerHTML = '<div class="pbar">' + profiles.map(function(p){
+    return '<button class="pchip'+(p === activeProfile ? ' on' : '')+'" onclick="switchProfile(\''+p.replace(/'/g,"\\'")+'\')">'+esc(p)+'</button>';
+  }).join('') + '<button class="pchip add" onclick="addProfile()" title="Aggiungi persona">＋</button></div>';
+}
+function reloadProfileData(){
+  weights   = store.get('gg_weights', []);
+  water     = store.get('gg_water', null);
+  if(!water || water.date !== todayStr()){ water = { date: todayStr(), ml: 0 }; store.set('gg_water', water); }
+  waterGoal = store.get('gg_water_goal', 2000);
+  foodGoals = store.get('gg_food_goals', { kcal:2000, protein:150, carbs:200, fat:60 });
+  foodDiary = store.get('gg_food_diary', {});
+  foodRecent= store.get('gg_food_recent', []);
+  foodCustom= store.get('gg_food_custom', []);
+  foodDishes= store.get('gg_food_dishes', []);
+  foodDate  = todayStr();
+}
+function switchProfile(name){
+  if(profiles.indexOf(name) < 0) return;
+  activeProfile = name; store.set('gg_active_profile', name);
+  reloadProfileData();
+  renderProfileBar(); renderWater(); renderWeight(); renderFoodHero();
+  show('scr-home'); window.scrollTo(0,0);
+  toast('Profilo: ' + name);
+}
+function addProfile(){
+  const name = prompt('Nome della persona:'); if(name === null) return;
+  const n = name.trim(); if(!n){ return; }
+  if(profiles.indexOf(n) < 0){ profiles.push(n); store.set('gg_profiles', profiles); }
+  switchProfile(n);
+}
+
 /* ================= AVVIO ================= */
+renderProfileBar();
 renderHome();
 renderWater();
 renderWeight();
