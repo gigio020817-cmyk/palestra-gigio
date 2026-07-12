@@ -1394,6 +1394,7 @@ function switchProfile(name){
 /* messaggio personale del profilo */
 function renderMsgCard(){
   const el = document.getElementById('msgCard'); if(!el) return;
+  if(activeProfile === profiles[0]){ el.innerHTML = ''; return; }  // sul profilo principale (Gigio) niente messaggio
   const has = profileMsg && profileMsg.trim();
   el.innerHTML = '<div class="foodhero" onclick="openMessage()" '+
     'style="background:linear-gradient(135deg,rgba(229,115,115,.20),rgba(126,217,167,.12)),var(--panel)">'+
