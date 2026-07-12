@@ -1402,6 +1402,7 @@ function renderMsgCard(){
     '<div class="chev">›</div></div>';
 }
 function openMessage(){
+  profileMsg = store.get('gg_message', '');   // rileggi sempre dalla memoria salvata
   if(!(profileMsg && profileMsg.trim())){ editMessage(); return; }
   document.getElementById('msgText').textContent = profileMsg;
   document.getElementById('msgSheet').classList.add('open');
