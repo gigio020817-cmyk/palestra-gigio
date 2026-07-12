@@ -208,10 +208,9 @@
     box-shadow:0 12px 44px rgba(0,0,0,.5)}
   .msg-title{font-size:18px; font-weight:700; margin-bottom:12px}
   .msg-text{font-size:17px; line-height:1.55; white-space:pre-wrap; word-break:break-word; margin-bottom:18px}
-  .msg-btns{display:flex; gap:10px}
-  .msg-btns button{flex:1; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700}
-  .msg-btns button:first-child{background:var(--row); color:var(--txt)}
-  .msg-btns button:last-child{background:var(--green); color:#173324}
+  .msg-btns{display:flex; gap:8px}
+  .msg-btns button{flex:1; border:none; border-radius:12px; padding:13px 6px; font-size:14px; font-weight:700; background:var(--row); color:var(--txt)}
+  .msg-btns button.send{background:var(--green); color:#173324}
 
   /* ============ ALIMENTAZIONE ============ */
   .home-sec{font-size:14px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
@@ -465,7 +464,8 @@
     <div class="msg-title">💌 Messaggio</div>
     <div id="msgText" class="msg-text"></div>
     <div class="msg-btns">
-      <button onclick="editMessage()">✏️ Scrivi / Modifica</button>
+      <button class="send" onclick="shareMessage()">📤 Invia</button>
+      <button onclick="editMessage()">✏️ Modifica</button>
       <button onclick="closeMessage()">Chiudi</button>
     </div>
   </div>
@@ -1408,6 +1408,30 @@ function openMessage(){
   document.getElementById('msgSheet').classList.add('open');
 }
 function closeMessage(){ document.getElementById('msgSheet').classList.remove('open'); }
+function shareMessage(){
+  const msg = store.get('gg_message', '');
+  if(!msg || !msg.trim()){ toast('Scrivi prima un messaggio'); return; }
+  const url = location.origin + location.pathname + '#msg=' + encodeURIComponent(msg);
+  if(navigator.share){
+    navigator.share({ title: 'Un messaggio per te 💌', text: msg, url: url }).catch(function(){});
+  } else if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){ toast('Link copiato — incollalo in chat'); }, function(){ prompt('Copia questo link e invialo:', url); });
+  } else {
+    prompt('Copia questo link e invialo:', url);
+  }
+}
+// se apri un link con un messaggio dentro, lo mostra e lo salva nel profilo attivo
+function checkIncomingMessage(){
+  const h = location.hash || '';
+  const m = h.match(/[#&]msg=([^&]*)/);
+  if(!m) return;
+  let txt = ''; try{ txt = decodeURIComponent(m[1].replace(/\+/g,' ')); }catch(e){ txt = m[1]; }
+  try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
+  if(!txt.trim()) return;
+  profileMsg = txt; store.set('gg_message', txt); renderMsgCard();
+  document.getElementById('msgText').textContent = txt;
+  document.getElementById('msgSheet').classList.add('open');
+}
 function editMessage(){
   const v = prompt('Scrivi il messaggio:', profileMsg || '');
   if(v === null) return;
@@ -1427,6 +1451,7 @@ function addProfile(){
 /* ================= AVVIO ================= */
 renderProfileBar();
 renderMsgCard();
+checkIncomingMessage();
 renderHome();
 renderWater();
 renderWeight();
