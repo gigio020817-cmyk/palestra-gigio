@@ -347,7 +347,7 @@
 <!-- ricerca / aggiungi alimento -->
 <div class="screen" id="scr-foodsearch">
   <header>
-    <button class="btn-round" onclick="show('scr-food')">‹</button>
+    <button class="btn-round" onclick="foodSearchBack()">‹</button>
     <h1 id="foodSearchTitle">Aggiungi</h1>
     <div class="spacer44"></div>
   </header>
@@ -357,7 +357,7 @@
       <button onclick="doFoodSearch()" title="Cerca">🔎</button>
       <button onclick="scanBarcode()" title="Scansiona codice a barre">📷</button>
     </div>
-    <div class="link-row" style="margin-top:4px">
+    <div class="link-row" id="foodSearchActions" style="margin-top:4px">
       <button class="btn-ghost" onclick="openCustomFood()">+ Crea alimento</button>
       <button class="btn-ghost" onclick="openDish()">+ Crea piatto</button>
     </div>
@@ -378,15 +378,12 @@
   <button class="cta" onclick="saveCustomFood()">Salva alimento</button>
 </div>
 
-<!-- crea piatto -->
+<!-- crea piatto (da ingredienti) -->
 <div class="screen" id="scr-fooddish">
-  <header><button class="btn-round" onclick="show('scr-foodsearch')">‹</button><h1>Nuovo piatto</h1><div class="spacer44"></div></header>
+  <header><button class="btn-round" onclick="cancelDish()">‹</button><h1>Nuovo piatto</h1><div class="spacer44"></div></header>
   <main>
-    <div class="field"><label>Nome piatto</label><input id="dfName" placeholder="Es. Pasta al pomodoro (mia)"></div>
-    <div class="field"><label>Calorie totali</label><input id="dfKcal" type="number" inputmode="decimal" placeholder="kcal"></div>
-    <div class="field"><label>Proteine totali (g)</label><input id="dfP" type="number" inputmode="decimal" placeholder="g"></div>
-    <div class="field"><label>Carboidrati totali (g)</label><input id="dfC" type="number" inputmode="decimal" placeholder="g"></div>
-    <div class="field"><label>Grassi totali (g)</label><input id="dfF" type="number" inputmode="decimal" placeholder="g"></div>
+    <div class="field"><label>Nome piatto</label><input id="dfName" placeholder="Es. La mia colazione"></div>
+    <div id="dishBody"></div>
   </main>
   <button class="cta" onclick="saveDish()">Salva piatto</button>
 </div>
@@ -901,6 +898,8 @@ let foodDishes = store.get('gg_food_dishes', []);  // [{name,k,p,c,f}]
 let foodDate = todayStr();
 let foodMeal = 'colazione';
 let foodSearchResults = [];
+let foodTarget = 'meal';        // 'meal' = aggiungi al diario · 'dish' = ingrediente di un piatto
+let dishDraft = { items: [] };  // piatto in costruzione
 
 function num(v){ const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isNaN(x) ? 0 : x; }
 function r1(x){ return Math.round(num(x) * 10) / 10; }
@@ -968,11 +967,13 @@ function renderFood(){
   el.innerHTML = html;
 }
 function foodAdd(meal){
-  foodMeal = meal; foodSearchResults = [];
+  foodMeal = meal; foodTarget = 'meal'; foodSearchResults = [];
   document.getElementById('foodQ').value = '';
+  document.getElementById('foodSearchActions').style.display = '';
   document.getElementById('foodSearchTitle').textContent = 'Aggiungi a ' + MEALS.find(m => m[0]===meal)[1];
   renderFoodSearch(); show('scr-foodsearch');
 }
+function foodSearchBack(){ show(foodTarget === 'dish' ? 'scr-fooddish' : 'scr-food'); }
 function editFoodItem(meal, i){
   const day = foodDay(foodDate); const it = day[meal][i]; if(!it) return;
   if(it.grams != null){
@@ -996,8 +997,14 @@ function addRecent(f){
 function pickFood(f){
   const v = prompt('Quanti grammi di "'+f.name+'"?', '100'); if(v === null) return;
   const g = num(v); if(!(g > 0)){ toast('Quantità non valida'); return; }
-  addToMeal({ name:f.name, grams:g, base:{ k:num(f.k), p:num(f.p), c:num(f.c), f:num(f.f) } });
-  addRecent(f); toast('Aggiunto ✓'); show('scr-food'); renderFood(); renderFoodHero();
+  const item = { name:f.name, grams:g, base:{ k:num(f.k), p:num(f.p), c:num(f.c), f:num(f.f) } };
+  addRecent(f);
+  if(foodTarget === 'dish'){
+    dishDraft.items.push(item);
+    toast('Ingrediente aggiunto ✓');
+    renderDishBuilder(); show('scr-fooddish'); return;
+  }
+  addToMeal(item); toast('Aggiunto ✓'); show('scr-food'); renderFood(); renderFoodHero();
 }
 function pickDish(d){
   addToMeal({ name:d.name, grams:null, tot:{ k:num(d.k), p:num(d.p), c:num(d.c), f:num(d.f) } });
@@ -1105,14 +1112,46 @@ function saveCustomFood(){
   foodCustom.unshift(f); store.set('gg_food_custom', foodCustom);
   toast('Alimento salvato'); renderFoodSearch(); show('scr-foodsearch');
 }
-function openDish(){ ['dfName','dfKcal','dfP','dfC','dfF'].forEach(id => document.getElementById(id).value = ''); show('scr-fooddish'); }
+function openDish(){ dishDraft = { items: [] }; document.getElementById('dfName').value = ''; renderDishBuilder(); show('scr-fooddish'); }
+function dishTotals(){
+  const t = {k:0,p:0,c:0,f:0};
+  dishDraft.items.forEach(it => { const x = itemTot(it); t.k+=x.k; t.p+=x.p; t.c+=x.c; t.f+=x.f; });
+  return { k:Math.round(t.k), p:Math.round(t.p), c:Math.round(t.c), f:Math.round(t.f) };
+}
+function renderDishBuilder(){
+  const el = document.getElementById('dishBody'); if(!el) return;
+  const t = dishTotals();
+  let h = '<div class="fsum"><div class="fsum-k"><b>'+t.k+' kcal</b><span class="goal">totale piatto</span></div>'+
+    '<div class="macro-top" style="margin-top:10px"><span class="ml">Proteine</span><span>'+t.p+' g</span></div>'+
+    '<div class="macro-top"><span class="ml">Carboidrati</span><span>'+t.c+' g</span></div>'+
+    '<div class="macro-top"><span class="ml">Grassi</span><span>'+t.f+' g</span></div></div>';
+  h += '<div class="fsec-lab">Ingredienti</div>';
+  if(!dishDraft.items.length) h += '<div class="fmsg">Aggiungi gli ingredienti: l\'app calcola da sola calorie e macro.</div>';
+  else h += dishDraft.items.map((it,i) => '<div class="frow"><div class="fr-t"><b>'+esc(it.name)+'</b>'+
+    '<span>'+it.grams+' g · '+Math.round(itemTot(it).k)+' kcal</span></div>'+
+    '<button class="fr-add" style="background:var(--row); color:var(--red); font-size:17px" onclick="dishDelIngredient('+i+')">✕</button></div>').join('');
+  h += '<button class="add-line btn-add-group" onclick="dishAddIngredient()">+ Aggiungi ingrediente</button>';
+  el.innerHTML = h;
+}
+function dishAddIngredient(){
+  foodTarget = 'dish'; foodSearchResults = [];
+  document.getElementById('foodQ').value = '';
+  document.getElementById('foodSearchActions').style.display = 'none';
+  document.getElementById('foodSearchTitle').textContent = 'Aggiungi ingrediente';
+  renderFoodSearch(); show('scr-foodsearch');
+}
+function dishDelIngredient(i){ dishDraft.items.splice(i,1); renderDishBuilder(); }
+function cancelDish(){ foodTarget = 'meal'; document.getElementById('foodSearchActions').style.display = ''; show('scr-foodsearch'); }
 function saveDish(){
   const name = document.getElementById('dfName').value.trim();
   if(!name){ toast('Dai un nome al piatto'); return; }
-  const d = { name:name, k:r1(document.getElementById('dfKcal').value), p:r1(document.getElementById('dfP').value),
-    c:r1(document.getElementById('dfC').value), f:r1(document.getElementById('dfF').value) };
-  foodDishes.unshift(d); store.set('gg_food_dishes', foodDishes);
-  toast('Piatto salvato'); renderFoodSearch(); show('scr-foodsearch');
+  if(!dishDraft.items.length){ toast('Aggiungi almeno un ingrediente'); return; }
+  const t = dishTotals();
+  foodDishes.unshift({ name:name, k:t.k, p:t.p, c:t.c, f:t.f, items:dishDraft.items });
+  store.set('gg_food_dishes', foodDishes);
+  dishDraft = { items: [] };
+  foodTarget = 'meal'; document.getElementById('foodSearchActions').style.display = '';
+  toast('Piatto salvato ✓'); renderFoodSearch(); show('scr-foodsearch');
 }
 function openFoodGoals(){
   document.getElementById('gKcal').value = foodGoals.kcal;
