@@ -75,6 +75,9 @@
   /* allenamento: info serie + controlli */
   .wo-hinfo{min-width:0}
   .wo-prog{color:var(--green); font-size:13px; font-weight:700; margin-top:4px}
+  .wo-clock{min-width:52px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; font-size:17px; color:var(--green); flex-shrink:0}
+  .wo-sslabel{color:var(--green); font-size:13px; font-weight:700; margin:14px 20px 2px}
+  .wo-ex.in-ss{border-left:3px solid var(--green)}
   .wo-setctl{display:flex; gap:8px; padding:6px 14px 12px}
   .wo-setctl button{flex:1; background:var(--row); color:var(--txt); border:none;
     border-radius:11px; padding:10px; font-size:14px; font-weight:600}
@@ -200,6 +203,20 @@
   .pchip.on{background:var(--green); color:#173324; border-color:var(--green)}
   .pchip.add{padding:8px 13px; font-size:18px; color:var(--txt)}
 
+  /* integratori */
+  .supp{background:var(--panel); border-radius:var(--radius); margin:12px 16px; padding:14px 16px; box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .supp-h{display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; margin-bottom:6px}
+  .supp-count{margin-left:auto; color:var(--green); font-weight:700; font-size:15px}
+  .supp-add{background:var(--green); color:#173324; border:none; width:30px; height:30px; border-radius:50%; font-size:19px; font-weight:700; line-height:1}
+  .supp-empty{color:var(--muted); font-size:14px; padding:4px 0}
+  .supp-row{display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px solid rgba(255,255,255,.06)}
+  .supp-chk{width:30px; height:30px; border-radius:50%; border:2px solid var(--muted); background:transparent; color:transparent; font-size:16px; flex-shrink:0}
+  .supp-chk.on{background:var(--green); border-color:var(--green); color:#173324}
+  .supp-name{flex:1; font-size:16px}
+  .supp-name.done{color:var(--muted); text-decoration:line-through}
+  .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
+  .supp-rep{color:var(--muted); font-size:13px; margin-top:9px; line-height:1.4}
+
   /* messaggio personale */
   #msgSheet{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none;
     align-items:center; justify-content:center; padding:24px}
@@ -293,9 +310,9 @@
   <main>
     <div id="profileBar"></div>
     <div id="msgCard"></div>
-    <div id="foodHero"></div>
     <div id="waterCard"></div>
     <div id="weightCard"></div>
+    <div id="suppCard"></div>
     <div id="trainingSection">
       <div class="home-sec">🏋️ Allenamento</div>
       <div id="homeList"></div>
@@ -323,7 +340,7 @@
   <header>
     <button class="btn-round" onclick="confirmExit()">‹</button>
     <h1 id="woTitle"></h1>
-    <div class="spacer44"></div>
+    <div id="woClock" class="wo-clock">0:00</div>
   </header>
   <main><div id="woBody"></div></main>
   <button class="cta" id="woFinish" onclick="finishWorkout()">Termina allenamento</button>
@@ -358,110 +375,6 @@
   <button class="cta" onclick="saveEditor()">Salva scheda</button>
 </div>
 
-<!-- ============ ALIMENTAZIONE: DIARIO ============ -->
-<div class="screen" id="scr-food">
-  <header>
-    <button class="btn-round" onclick="show('scr-home'); renderFoodHero()">‹</button>
-    <h1>Alimentazione</h1>
-    <button class="btn-round" onclick="openFoodGoals()" title="Obiettivi">⚙︎</button>
-  </header>
-  <main>
-    <div id="foodBody"></div>
-    <div class="link-row">
-      <button class="btn-ghost" onclick="openFoodGoals()">🎯 Obiettivi &amp; calcolatore</button>
-      <button class="btn-ghost" onclick="show('scr-foodhistory'); renderFoodHistory()">📈 Storico</button>
-    </div>
-  </main>
-</div>
-
-<!-- ricerca / aggiungi alimento -->
-<div class="screen" id="scr-foodsearch">
-  <header>
-    <button class="btn-round" onclick="foodSearchBack()">‹</button>
-    <h1 id="foodSearchTitle">Aggiungi</h1>
-    <div class="spacer44"></div>
-  </header>
-  <main>
-    <div class="searchbar">
-      <input id="foodQ" placeholder="Cerca un alimento…" onkeydown="if(event.key==='Enter')doFoodSearch()">
-      <button onclick="doFoodSearch()" title="Cerca">🔎</button>
-      <button onclick="scanBarcode()" title="Scansiona codice a barre">📷</button>
-    </div>
-    <div class="link-row" id="foodSearchActions" style="margin-top:4px">
-      <button class="btn-ghost" onclick="openCustomFood()">+ Crea alimento</button>
-      <button class="btn-ghost" onclick="openDish()">+ Crea piatto</button>
-    </div>
-    <div id="foodSearchBody"></div>
-  </main>
-</div>
-
-<!-- crea alimento personalizzato -->
-<div class="screen" id="scr-foodcustom">
-  <header><button class="btn-round" onclick="show('scr-foodsearch')">‹</button><h1>Nuovo alimento</h1><div class="spacer44"></div></header>
-  <main>
-    <div class="field"><label>Nome</label><input id="cfName" placeholder="Es. Riso basmati"></div>
-    <div class="field"><label>Calorie (per 100 g)</label><input id="cfKcal" type="number" inputmode="decimal" placeholder="kcal"></div>
-    <div class="field"><label>Proteine (per 100 g)</label><input id="cfP" type="number" inputmode="decimal" placeholder="g"></div>
-    <div class="field"><label>Carboidrati (per 100 g)</label><input id="cfC" type="number" inputmode="decimal" placeholder="g"></div>
-    <div class="field"><label>Grassi (per 100 g)</label><input id="cfF" type="number" inputmode="decimal" placeholder="g"></div>
-  </main>
-  <button class="cta" onclick="saveCustomFood()">Salva alimento</button>
-</div>
-
-<!-- crea piatto (da ingredienti) -->
-<div class="screen" id="scr-fooddish">
-  <header><button class="btn-round" onclick="cancelDish()">‹</button><h1>Nuovo piatto</h1><div class="spacer44"></div></header>
-  <main>
-    <div class="field"><label>Nome piatto</label><input id="dfName" placeholder="Es. La mia colazione"></div>
-    <div id="dishBody"></div>
-  </main>
-  <button class="cta" onclick="saveDish()">Salva piatto</button>
-</div>
-
-<!-- obiettivi + calcolatore -->
-<div class="screen" id="scr-foodgoals">
-  <header><button class="btn-round" onclick="show('scr-food')">‹</button><h1>Obiettivi</h1><div class="spacer44"></div></header>
-  <main>
-    <div class="ed-group">
-      <h3>I miei obiettivi giornalieri</h3>
-      <div class="field"><label>Calorie</label><input id="gKcal" type="number" inputmode="decimal"></div>
-      <div class="field"><label>Proteine (g)</label><input id="gP" type="number" inputmode="decimal"></div>
-      <div class="field"><label>Carboidrati (g)</label><input id="gC" type="number" inputmode="decimal"></div>
-      <div class="field"><label>Grassi (g)</label><input id="gF" type="number" inputmode="decimal"></div>
-    </div>
-    <div class="ed-group">
-      <h3>Calcolatore automatico</h3>
-      <div class="field"><label>Nome (facoltativo)</label><input id="cName" placeholder="Es. Gigio"></div>
-      <div class="field"><label>Peso (kg)</label><input id="cWeight" type="number" inputmode="decimal"></div>
-      <div class="field"><label>Altezza (cm)</label><input id="cHeight" type="number" inputmode="decimal"></div>
-      <div class="field"><label>Età</label><input id="cAge" type="number" inputmode="numeric"></div>
-      <div class="field"><label>Sesso</label><select id="cSex"><option value="m">Uomo</option><option value="f">Donna</option></select></div>
-      <div class="field"><label>Livello di attività</label><select id="cAct">
-        <option value="1.2">Sedentario</option>
-        <option value="1.375">Attività leggera (1-3 gg/sett)</option>
-        <option value="1.55">Moderata (3-5 gg/sett)</option>
-        <option value="1.725">Intensa (6-7 gg/sett)</option>
-        <option value="1.9">Molto intensa</option></select></div>
-      <div class="field"><label>Obiettivo</label><select id="cGoal">
-        <option value="dimagrire">Dimagrire</option>
-        <option value="mantenere">Mantenere</option>
-        <option value="massa">Massa</option></select></div>
-      <div class="field"><label>Ritmo (per deficit / surplus)</label><select id="cRate">
-        <option value="leggero">Leggero</option>
-        <option value="moderato">Moderato</option>
-        <option value="aggressivo">Aggressivo</option></select></div>
-      <button class="add-line" onclick="calcGoals()">Calcola e proponi valori</button>
-      <div id="calcInfo" class="fmsg" style="text-align:left; padding:8px 4px 2px; display:none"></div>
-    </div>
-  </main>
-  <button class="cta" onclick="saveGoals()">Salva obiettivi</button>
-</div>
-
-<!-- storico alimentazione -->
-<div class="screen" id="scr-foodhistory">
-  <header><button class="btn-round" onclick="show('scr-food')">‹</button><h1>Storico &amp; grafici</h1><div class="spacer44"></div></header>
-  <main><div id="foodHistBody"></div></main>
-</div>
 
 <input type="file" accept="image/*" id="bgInput" style="display:none" onchange="onBgPicked(event)">
 
@@ -554,7 +467,7 @@ const DEFAULT_SCHEDE = [{
 
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Le altre (schede, sessioni) sono condivise.
-const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg']);
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log']);
 let profiles = null, activeProfile = null;
 function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
 function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
@@ -659,30 +572,47 @@ function openScheda(id){
 /* ================= ALLENAMENTO ================= */
 function startWorkout(){
   const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
-  const exercises = [];
-  s.groups.forEach(g=>g.exercises.forEach(e=>exercises.push(e)));
+  const flat = [];
+  s.groups.forEach((g,gi)=>g.exercises.forEach(e=>flat.push({e:e, gi:gi})));
   state.workout = {
     schedaId:s.id, schedaName:s.name, start:Date.now(),
-    log: exercises.map(e=>({
-      name:e.name, img:e.img, reps:e.reps,
+    log: flat.map(x=>{ const e = x.e; return {
+      name:e.name, img:e.img, reps:e.reps, group:x.gi,
       sets: Array.from({length:e.sets}, (_,i)=>{
         const last = (lastLog[e.name]||[])[i] || {};
         return { kg:last.kg ?? '', reps:last.reps ?? '', done:false };
       })
-    }))
+    };})
   };
   document.getElementById('woTitle').textContent = s.name;
+  woClockStart();
   renderWorkout();
   show('scr-workout');
 }
+function woClockStart(){ woClockTick(); clearInterval(state.woClock); state.woClock = setInterval(woClockTick, 1000); }
+function woClockTick(){
+  const el = document.getElementById('woClock'); if(!el || !state.workout) return;
+  const s = Math.max(0, Math.floor((Date.now() - state.workout.start)/1000));
+  el.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+function woClockStop(){ clearInterval(state.woClock); state.woClock = null; }
 
 function renderWorkout(){
   const w = state.workout;
+  const gsize = {};
+  w.log.forEach(x=>{ gsize[x.group] = (gsize[x.group]||0)+1; });
+  let prevGroup = null;
   document.getElementById('woBody').innerHTML = w.log.map((ex,ei)=>{
+    let ssHead = '';
+    if(ex.group !== prevGroup){
+      if(gsize[ex.group] > 1) ssHead = '<div class="wo-sslabel">🔗 Superset — nessuna pausa tra gli esercizi, poi 2 min</div>';
+      prevGroup = ex.group;
+    }
+    const isSS = gsize[ex.group] > 1;
     const last = lastLog[ex.name];
     const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
     const doneCount = ex.sets.filter(s=>s.done).length;
-    return '<div class="wo-ex">'+
+    return ssHead + '<div class="wo-ex'+(isSS?' in-ss':'')+'">'+
       '<div class="wo-head"><div class="ex-img">'+imgTag(ex.img)+'</div>'+
       '<div class="wo-hinfo"><div class="n">'+esc(ex.name)+'</div>'+
       '<div class="m">'+ex.sets.length+' serie · obiettivo '+esc(ex.reps)+repsUnit(ex.reps)+'</div>'+
@@ -708,12 +638,29 @@ function removeSet(ei){
   const s = state.workout.log[ei].sets;
   if(s.length > 1){ s.pop(); renderWorkout(); } else { toast('Serve almeno una serie'); }
 }
-function setVal(ei,si,field,val){ state.workout.log[ei].sets[si][field] = val; }
+function setVal(ei,si,field,val){
+  const ex = state.workout.log[ei];
+  ex.sets[si][field] = val;
+  if(si === 0){                                 // la prima serie detta le altre
+    for(let j=1;j<ex.sets.length;j++){ ex.sets[j][field] = val; }
+    renderWorkout();
+  }
+}
 function toggleDone(ei,si){
-  const st = state.workout.log[ei].sets[si];
-  st.done = !st.done;
-  event.target.classList.toggle('on', st.done);
-  if(st.done) timerStart(90);
+  const w = state.workout;
+  const ex = w.log[ei];
+  ex.sets[si].done = !ex.sets[si].done;
+  if(ex.sets[si].done){
+    const mates = w.log.filter(x=>x.group === ex.group);
+    if(mates.length > 1){
+      // superset: pausa 2 min solo quando tutti gli esercizi hanno chiuso questa serie
+      const roundDone = mates.every(x=>!x.sets[si] || x.sets[si].done);
+      if(roundDone) timerStart(120);
+    } else {
+      timerStart(120);
+    }
+  }
+  renderWorkout();
 }
 
 function finishWorkout(){
@@ -733,12 +680,12 @@ function finishWorkout(){
   });
   store.set('gg_sessions', sessions);
   state.workout = null;
-  timerStop();
+  timerStop(); woClockStop();
   toast('Allenamento salvato 💪');
   show('scr-home'); renderHome();
 }
 function confirmExit(){
-  if(confirm('Uscire senza salvare l\'allenamento?')){ state.workout=null; timerStop(); show('scr-scheda'); }
+  if(confirm('Uscire senza salvare l\'allenamento?')){ state.workout=null; timerStop(); woClockStop(); show('scr-scheda'); }
 }
 
 /* ================= TIMER ================= */
@@ -964,6 +911,8 @@ let foodRecent = store.get('gg_food_recent', []);  // [{name,k,p,c,f,code}]
 let foodCustom = store.get('gg_food_custom', []);  // [{name,k,p,c,f}]
 let foodDishes = store.get('gg_food_dishes', []);  // [{name,k,p,c,f}]
 let profileMsgs = normalizeMsgs(store.get('gg_message', []));  // elenco messaggi del profilo
+let supps = store.get('gg_supps', []);          // elenco integratori abituali
+let suppsLog = store.get('gg_supps_log', {});   // {data: [nomi presi]}
 let foodDate = todayStr();
 let foodMeal = 'colazione';
 let foodSearchResults = [];
@@ -1388,6 +1337,8 @@ function reloadProfileData(){
   foodCustom= store.get('gg_food_custom', []);
   foodDishes= store.get('gg_food_dishes', []);
   profileMsgs= normalizeMsgs(store.get('gg_message', []));
+  supps     = store.get('gg_supps', []);
+  suppsLog  = store.get('gg_supps_log', {});
   foodDate  = todayStr();
 }
 function switchProfile(name){
@@ -1395,7 +1346,7 @@ function switchProfile(name){
   activeProfile = name; store.set('gg_active_profile', name);
   reloadProfileData();
   applyBackground();
-  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderFoodHero();
+  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps();
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
 }
@@ -1488,10 +1439,58 @@ function chooseBackground(){
   } else pickBackground();
 }
 
+/* ================= INTEGRATORI ================= */
+function renderSupps(){
+  const el = document.getElementById('suppCard'); if(!el) return;
+  if(!supps.length){
+    el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori</span>'+
+      '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
+      '<div class="supp-empty">Aggiungi gli integratori che prendi di solito, così spunti cosa hai preso.</div></div>';
+    return;
+  }
+  const taken = suppsLog[todayStr()] || [];
+  const takenN = supps.filter(function(s){ return taken.indexOf(s) > -1; }).length;
+  const manca = supps.filter(function(s){ return taken.indexOf(s) < 0; });
+  el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
+    '<span class="supp-count">'+takenN+'/'+supps.length+'</span>'+
+    '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
+    supps.map(function(s,i){
+      const on = taken.indexOf(s) > -1;
+      return '<div class="supp-row">'+
+        '<button class="supp-chk'+(on?' on':'')+'" onclick="toggleSupp('+i+')">✓</button>'+
+        '<span class="supp-name'+(on?' done':'')+'" onclick="toggleSupp('+i+')">'+esc(s)+'</span>'+
+        '<button class="supp-x" onclick="removeSupp('+i+')">✕</button></div>';
+    }).join('')+
+    '<div class="supp-rep">'+(manca.length ? '⏳ Da prendere: '+manca.map(esc).join(', ') : '✅ Tutti presi oggi 💪')+'</div>'+
+    '</div>';
+}
+function toggleSupp(i){
+  const name = supps[i]; if(name === undefined) return;
+  const d = todayStr();
+  const taken = (suppsLog[d] || []).slice();
+  const idx = taken.indexOf(name);
+  if(idx > -1) taken.splice(idx,1); else taken.push(name);
+  suppsLog[d] = taken; store.set('gg_supps_log', suppsLog);
+  renderSupps();
+}
+function addSupp(){
+  const v = prompt('Nome integratore (es. Creatina):'); if(v === null) return;
+  const n = v.trim(); if(!n) return;
+  if(supps.indexOf(n) < 0){ supps.push(n); store.set('gg_supps', supps); }
+  renderSupps();
+}
+function removeSupp(i){
+  const name = supps[i]; if(name === undefined) return;
+  if(!confirm('Togliere "'+name+'" dalla lista?')) return;
+  supps.splice(i,1); store.set('gg_supps', supps);
+  renderSupps();
+}
+
 /* ================= AVVIO ================= */
 applyBackground();
 renderProfileBar();
 renderMsgCard();
+renderSupps();
 renderHome();
 renderWater();
 renderWeight();
