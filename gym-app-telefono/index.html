@@ -661,6 +661,13 @@ if(!store.get('gg_supps_seed_v1', false)){
   }
   store.set('gg_supps_seed_v1', true);
 }
+// v2: sostituisce la lista integratori di Gigio col programma completo e raggruppato (scelta dell'utente)
+if(!store.get('gg_supps_seed_v2', false)){
+  const gk = 'gg_p_' + profiles[0] + '_gg_supps';
+  const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
+  _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
+  store.set('gg_supps_seed_v2', true);
+}
 // ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
 sessions = store.get('gg_sessions', []);
 lastLog  = store.get('gg_last', {});

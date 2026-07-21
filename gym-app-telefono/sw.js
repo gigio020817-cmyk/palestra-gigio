@@ -1,4 +1,4 @@
-const CACHE = 'gigio-gym-v29';
+const CACHE = 'gigio-gym-v30';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg'];
 // immagini esercizi impacchettate: precaricate così funzionano OFFLINE (in palestra)
 const IMG_SHELL = [
