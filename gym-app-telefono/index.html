@@ -2045,9 +2045,18 @@ function motivOfDay(){
   const day = Math.floor((now - start) / 86400000);   // giorno dell’anno
   return MOTIV[day % MOTIV.length];
 }
+// vezzeggiativi per profilo (a rotazione casuale). Per Erjola: come la chiama Gigio.
+const NICK = {
+  'Erjola': ['Dashury ime', 'Drita ime', 'Jeta ime', 'Spirty ime', 'Ti amo', 'Te dua shum', 'Te dua pa fund']
+};
+function motivSub(){
+  const nicks = NICK[activeProfile];
+  if(nicks && nicks.length) return nicks[Math.floor(Math.random() * nicks.length)] + ' 💕';
+  return activeProfile ? ('Forza ' + activeProfile + ' 💪') : '';
+}
 function openMotiv(){
   document.getElementById('motivQuote').textContent = '“' + motivOfDay() + '”';
-  document.getElementById('motivSub').textContent = activeProfile ? ('Forza ' + activeProfile + ' 💪') : '';
+  document.getElementById('motivSub').textContent = motivSub();
   show('scr-motiv');
 }
 (function(){
