@@ -463,6 +463,69 @@ const DEFAULT_SCHEDE = [{
       {name:'Hammer curl con manubri', sets:3, reps:'10 - 12', img:IMG+'Hammer_Curls/0.jpg'}
     ]}
   ]
+},{
+  id:'s4', name:'Erjola A — Gambe e spinta',
+  groups:[
+    {label:'Gambe', exercises:[
+      {name:'Squat goblet con manubrio', sets:3, reps:'12 - 15', img:IMG+'Goblet_Squat/0.jpg'}
+    ]},
+    {label:'Affondi', exercises:[
+      {name:'Affondi sul posto con manubri (per gamba)', sets:3, reps:'10', img:IMG+'Dumbbell_Lunges/0.jpg'}
+    ]},
+    {label:'Petto', exercises:[
+      {name:'Distensioni su panca con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'}
+    ]},
+    {label:'Spalle', exercises:[
+      {name:'Alzate laterali con manubri', sets:3, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
+    ]},
+    {label:'Core', exercises:[
+      {name:'Plank', sets:3, reps:'30 - 45 sec', img:IMG+'Plank/0.jpg'}
+    ]},
+    {label:'Cardio', exercises:[
+      {name:'Vogatore — ritmo tranquillo', sets:1, reps:'10:00', img:''}
+    ]}
+  ]
+},{
+  id:'s5', name:'Erjola B — Schiena e tirata',
+  groups:[
+    {label:'Dorsali', exercises:[
+      {name:'Lat machine avanti', sets:3, reps:'10 - 12', img:IMG+'Wide-Grip_Lat_Pulldown/0.jpg'}
+    ]},
+    {label:'Schiena', exercises:[
+      {name:'Rematore con manubrio un braccio (per lato)', sets:3, reps:'10 - 12', img:IMG+'One-Arm_Dumbbell_Row/0.jpg'}
+    ]},
+    {label:'Femorali e glutei', exercises:[
+      {name:'Stacco rumeno con bilanciere', sets:3, reps:'10 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
+    ]},
+    {label:'Bicipiti', exercises:[
+      {name:'Curl bicipiti con manubri', sets:3, reps:'12', img:IMG+'Dumbbell_Bicep_Curl/0.jpg'}
+    ]},
+    {label:'Addome', exercises:[
+      {name:'Crunch', sets:3, reps:'15 - 20', img:IMG+'Crunches/0.jpg'}
+    ]},
+    {label:'Cardio', exercises:[
+      {name:'Tapis roulant — camminata veloce', sets:1, reps:'15:00', img:''}
+    ]}
+  ]
+},{
+  id:'s6', name:'Erjola C — Total body',
+  groups:[
+    {label:'Glutei', exercises:[
+      {name:'Ponte per glutei con bilanciere', sets:3, reps:'15', img:IMG+'Barbell_Glute_Bridge/0.jpg'}
+    ]},
+    {label:'Petto', exercises:[
+      {name:'Croci alla pectoral machine', sets:3, reps:'12', img:IMG+'Butterfly/0.jpg'}
+    ]},
+    {label:'Dorsali', exercises:[
+      {name:'Lat machine presa stretta', sets:3, reps:'12', img:IMG+'Close-Grip_Front_Lat_Pulldown/0.jpg'}
+    ]},
+    {label:'Spalle', exercises:[
+      {name:'Spinte sopra la testa con manubri da seduta', sets:3, reps:'10 - 12', img:IMG+'Seated_Dumbbell_Press/0.jpg'}
+    ]},
+    {label:'Cardio', exercises:[
+      {name:'Vogatore a intervalli (1 min forte + 1 min piano)', sets:1, reps:'12:00', img:''}
+    ]}
+  ]
 }];
 
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
@@ -488,6 +551,13 @@ if(!store.get('gg_seed_v2', false)){
   DEFAULT_SCHEDE.forEach(d=>{ if(!schede.some(s=>s.id===d.id)) schede.push(d); });
   store.set('gg_schede', schede);
   store.set('gg_seed_v2', true);
+}
+// v3: aggiunge le schede di Erjola (s4/s5/s6) anche a chi aveva già completato il seed v2,
+// senza toccare le schede create dall'utente né lo storico
+if(!store.get('gg_seed_v3', false)){
+  DEFAULT_SCHEDE.forEach(d=>{ if(!schede.some(s=>s.id===d.id)) schede.push(d); });
+  store.set('gg_schede', schede);
+  store.set('gg_seed_v3', true);
 }
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
@@ -1195,9 +1265,15 @@ function openFoodGoals(){
   show('scr-foodgoals');
 }
 function calcGoals(){
-  const w = num(document.getElementById('cWeight').value), h = num(document.getElementById('cHeight').value), a = num(document.getElementById('cAge').value);
+  const w = num(document.getElementById('cWeight').value); let h = num(document.getElementById('cHeight').value); const a = num(document.getElementById('cAge').value);
   const sex = document.getElementById('cSex').value, act = num(document.getElementById('cAct').value), goal = document.getElementById('cGoal').value;
   if(!(w > 0 && h > 0 && a > 0)){ toast('Inserisci peso, altezza ed età'); return; }
+  // altezza in cm: se sotto 3 è stata scritta in metri (es. 1.82) → converti in cm
+  if(h < 3){ h = Math.round(h * 100); document.getElementById('cHeight').value = h; }
+  // controlli di validità
+  if(w < 30 || w > 300){ toast('Peso non valido (30–300 kg)'); return; }
+  if(h < 100 || h > 250){ toast('Altezza non valida (100–250 cm)'); return; }
+  if(a < 10 || a > 100){ toast('Età non valida (10–100 anni)'); return; }
   const rate = document.getElementById('cRate').value;
   const bmr = 10*w + 6.25*h - 5*a + (sex === 'm' ? 5 : -161);
   const tdee = Math.round(bmr * act);
