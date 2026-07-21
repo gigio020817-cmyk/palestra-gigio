@@ -555,8 +555,9 @@ const DEFAULT_SCHEDE = [{
 }];
 
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
-// chiavi che appartengono al SINGOLO profilo (persona). Le altre (schede, sessioni) sono condivise.
-const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log']);
+// chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
+// gg_last (pesi dell'ultima volta) e gg_sessions (storico) sono per-profilo: ognuno tiene i suoi.
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log','gg_last','gg_sessions']);
 let profiles = null, activeProfile = null;
 function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
 function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
@@ -605,8 +606,8 @@ if(!store.get('gg_seed_v5', false)){
   store.set('gg_schede', schede);
   store.set('gg_seed_v5', true);
 }
-let sessions = store.get('gg_sessions', []);
-let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
+let sessions = [];
+let lastLog = {}; // nomeEsercizio -> [{kg,reps}, ...] (per-profilo, letto dopo l'attivazione del profilo)
 
 // ---- profili (persone): peso, acqua e alimentazione sono per-profilo ----
 profiles = store.get('gg_profiles', null);
@@ -618,6 +619,17 @@ if(!store.get('gg_migrated_profiles', false)){
   PROFILE_KEYS.forEach(function(k){ const old = rawGet(k); if(old !== undefined) store.set(k, old); });
   store.set('gg_migrated_profiles', true);
 }
+// storico e pesi-ultima-volta diventano per-profilo: i dati condivisi esistenti vanno dentro Gigio
+if(!store.get('gg_migrated_hist', false)){
+  ['gg_sessions','gg_last'].forEach(function(k){
+    const old = rawGet(k);
+    if(old !== undefined){ const nk = 'gg_p_' + profiles[0] + '_' + k; _mem[nk] = old; try{ localStorage.setItem(nk, JSON.stringify(old)); }catch(e){} }
+  });
+  store.set('gg_migrated_hist', true);
+}
+// ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
+sessions = store.get('gg_sessions', []);
+lastLog  = store.get('gg_last', {});
 
 // acqua: si azzera ogni nuovo giorno
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -1535,6 +1547,8 @@ function reloadProfileData(){
   profileMsgs= normalizeMsgs(store.get('gg_message', []));
   supps     = store.get('gg_supps', []);
   suppsLog  = store.get('gg_supps_log', {});
+  sessions  = store.get('gg_sessions', []);   // storico del profilo
+  lastLog   = store.get('gg_last', {});        // pesi dell'ultima volta del profilo
   foodDate  = todayStr();
 }
 function switchProfile(name){
