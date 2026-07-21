@@ -1409,8 +1409,8 @@ function renderProfileBar(){
     '<button class="pchip add" onclick="chooseBackground()" title="Cambia sfondo">🖼️</button></div>';
   updateTrainingVisibility();
 }
-// l'allenamento è solo per il primo profilo (Gigio); negli altri viene nascosto
-function trainingEnabled(){ return activeProfile === profiles[0]; }
+// l'allenamento è visibile a tutti i profili; ogni profilo vede solo le proprie schede (filtro per proprietario)
+function trainingEnabled(){ return true; }
 function updateTrainingVisibility(){
   const el = document.getElementById('trainingSection');
   if(el) el.style.display = trainingEnabled() ? '' : 'none';
