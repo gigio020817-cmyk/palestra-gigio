@@ -245,6 +245,9 @@
   .supp-dose{color:var(--green); font-size:13px; font-weight:600}
   .supp-note{color:var(--muted); font-size:12.5px; line-height:1.35; margin-top:2px}
   .supp-row.noeval .supp-name{font-weight:600}
+  .supp-warn{background:rgba(231,195,107,.12); border:1px solid rgba(231,195,107,.35);
+    border-radius:10px; padding:9px 11px; margin:8px 0 2px; font-size:12.5px; line-height:1.4; color:#EBD8A6}
+  .supp-warn b{color:#F1E2B4}
 
   /* messaggio personale */
   #msgSheet{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none;
@@ -1728,10 +1731,12 @@ function renderSupps(){
   const rep = daily.length
     ? (mancaN>0 ? '⏳ Ne mancano '+mancaN+' oggi' : '✅ Tutti presi oggi 💪')
     : '';
+  const warn = '<div class="supp-warn">💧 <b>Bevi tanto:</b> creatina e psillo richiedono molta acqua.<br>'+
+    '⚠️ <b>Zinco doppio</b> (ZMA + Opti-Men): valuta col medico se alternarli.</div>';
   el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
     '<span class="supp-count">'+takenN+'/'+daily.length+'</span>'+
     '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
-    body +
+    warn + body +
     (rep?'<div class="supp-rep">'+rep+'</div>':'')+
     '</div>';
 }
