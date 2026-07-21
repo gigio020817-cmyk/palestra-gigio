@@ -237,6 +237,14 @@
   .supp-name.done{color:var(--muted); text-decoration:line-through}
   .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
   .supp-rep{color:var(--muted); font-size:13px; margin-top:9px; line-height:1.4}
+  .supp-grp{color:var(--green); font-size:12.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.4px; margin:12px 0 2px}
+  .supp-grp.eval{color:#E7C36B}
+  .supp-info{flex:1}
+  .supp-info .supp-name{display:block}
+  .supp-dose{color:var(--green); font-size:13px; font-weight:600}
+  .supp-note{color:var(--muted); font-size:12.5px; line-height:1.35; margin-top:2px}
+  .supp-row.noeval .supp-name{font-weight:600}
 
   /* messaggio personale */
   #msgSheet{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none;
@@ -554,6 +562,18 @@ const DEFAULT_SCHEDE = [{
   ]
 }];
 
+// programma integratori predefinito di Gigio (per-profilo: Erjola parte vuota e si fa la sua)
+const DEFAULT_SUPPS_GIGIO = [
+  {name:'Opti-Men (multivitaminico)', when:'Mattina', dose:'', note:'A stomaco pieno, con la colazione'},
+  {name:'Omega 3', when:'Mattina', dose:'', note:'Con un pasto che contiene grassi (assorbe meglio)'},
+  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Ogni giorno, anche a riposo. Conta la costanza, scegli un orario fisso'},
+  {name:'Proteine (shake)', when:'Durante la giornata', dose:'', note:'Dopo l’allenamento o per arrivare al fabbisogno proteico'},
+  {name:'ZMA', when:'Sera', dose:'', note:'A stomaco vuoto (1–2 h dai pasti), lontano dal calcio. ⚠️ Ha zinco come le Opti-Men: valuta di alternarli e senti il medico'},
+  {name:'Ashwagandha', when:'Sera', dose:'', note:'Prima di dormire, aiuta a gestire lo stress'},
+  {name:'Psillo (fibra)', when:'Quando serve', dose:'', note:'Con un bicchiere d’acqua grande, lontano 1–2 h da altri integratori e farmaci'},
+  {name:'Garcinia Cambogia', when:'Da valutare', dose:'', note:'Evidenze deboli sul dimagrimento e possibili problemi al fegato: non è una priorità'},
+  {name:'Bromelina', when:'Da valutare', dose:'', note:'Non ancora presa. Digestiva → durante i pasti; antinfiammatoria → a stomaco vuoto tra i pasti'}
+];
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
 // gg_last (pesi dell'ultima volta) e gg_sessions (storico) sono per-profilo: ognuno tiene i suoi.
@@ -626,6 +646,17 @@ if(!store.get('gg_migrated_hist', false)){
     if(old !== undefined){ const nk = 'gg_p_' + profiles[0] + '_' + k; _mem[nk] = old; try{ localStorage.setItem(nk, JSON.stringify(old)); }catch(e){} }
   });
   store.set('gg_migrated_hist', true);
+}
+// precarica il programma integratori di Gigio (solo nel suo profilo, solo se non ne ha già)
+if(!store.get('gg_supps_seed_v1', false)){
+  const gk = 'gg_p_' + profiles[0] + '_gg_supps';
+  let cur = null; try{ cur = JSON.parse(localStorage.getItem(gk)); }catch(e){}
+  if(cur === null && (gk in _mem)) cur = _mem[gk];
+  if(!cur || !cur.length){
+    const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
+    _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
+  }
+  store.set('gg_supps_seed_v1', true);
 }
 // ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
 sessions = store.get('gg_sessions', []);
@@ -1650,6 +1681,15 @@ function chooseBackground(){
 }
 
 /* ================= INTEGRATORI ================= */
+// ordine dei momenti della giornata
+const SUPP_ORDER = ['Mattina','Durante la giornata','Sera','Quando serve','Da valutare','Altro'];
+// compatibilità: le voci vecchie erano semplici stringhe; le nuove sono oggetti {name,when,dose,note}
+function suppName(s){ return (s && typeof s === 'object') ? (s.name || '') : String(s || ''); }
+function suppWhen(s){ const w = (s && typeof s === 'object') ? s.when : ''; return SUPP_ORDER.indexOf(w) > -1 ? w : 'Altro'; }
+function suppDose(s){ return (s && typeof s === 'object') ? (s.dose || '') : ''; }
+function suppNote(s){ return (s && typeof s === 'object') ? (s.note || '') : ''; }
+function isEval(s){ return suppWhen(s) === 'Da valutare'; }
+
 function renderSupps(){
   const el = document.getElementById('suppCard'); if(!el) return;
   if(!supps.length){
@@ -1659,39 +1699,63 @@ function renderSupps(){
     return;
   }
   const taken = suppsLog[todayStr()] || [];
-  const takenN = supps.filter(function(s){ return taken.indexOf(s) > -1; }).length;
-  const manca = supps.filter(function(s){ return taken.indexOf(s) < 0; });
-  el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
-    '<span class="supp-count">'+takenN+'/'+supps.length+'</span>'+
-    '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
-    supps.map(function(s,i){
-      const on = taken.indexOf(s) > -1;
-      return '<div class="supp-row">'+
-        '<button class="supp-chk'+(on?' on':'')+'" onclick="toggleSupp('+i+')">✓</button>'+
-        '<span class="supp-name'+(on?' done':'')+'" onclick="toggleSupp('+i+')">'+esc(s)+'</span>'+
+  // il conteggio giornaliero esclude i "Da valutare"
+  const daily  = supps.filter(function(s){ return !isEval(s); });
+  const takenN = daily.filter(function(s){ return taken.indexOf(suppName(s)) > -1; }).length;
+
+  let body = '';
+  SUPP_ORDER.forEach(function(grp){
+    const items = [];
+    supps.forEach(function(s,i){ if(suppWhen(s) === grp) items.push({s:s, i:i}); });
+    if(!items.length) return;
+    const evalGrp = (grp === 'Da valutare');
+    body += '<div class="supp-grp'+(evalGrp?' eval':'')+'">'+esc(grp)+'</div>';
+    body += items.map(function(o){
+      const s = o.s, i = o.i, nm = suppName(s), on = taken.indexOf(nm) > -1;
+      const dose = suppDose(s), note = suppNote(s);
+      const info = '<div class="supp-info">'+
+        '<span class="supp-name'+(on&&!evalGrp?' done':'')+'"'+(evalGrp?'':' onclick="toggleSupp('+i+')"')+'>'+esc(nm)+
+          (dose?' <span class="supp-dose">'+esc(dose)+'</span>':'')+'</span>'+
+        (note?'<div class="supp-note">'+esc(note)+'</div>':'')+'</div>';
+      const chk = evalGrp ? '<span class="supp-chk" style="opacity:.25">•</span>'
+                          : '<button class="supp-chk'+(on?' on':'')+'" onclick="toggleSupp('+i+')">✓</button>';
+      return '<div class="supp-row'+(evalGrp?'':' noeval')+'">'+ chk + info +
         '<button class="supp-x" onclick="removeSupp('+i+')">✕</button></div>';
-    }).join('')+
-    '<div class="supp-rep">'+(manca.length ? '⏳ Da prendere: '+manca.map(esc).join(', ') : '✅ Tutti presi oggi 💪')+'</div>'+
+    }).join('');
+  });
+
+  const mancaN = daily.length - takenN;
+  const rep = daily.length
+    ? (mancaN>0 ? '⏳ Ne mancano '+mancaN+' oggi' : '✅ Tutti presi oggi 💪')
+    : '';
+  el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
+    '<span class="supp-count">'+takenN+'/'+daily.length+'</span>'+
+    '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
+    body +
+    (rep?'<div class="supp-rep">'+rep+'</div>':'')+
     '</div>';
 }
 function toggleSupp(i){
-  const name = supps[i]; if(name === undefined) return;
-  const d = todayStr();
+  const s = supps[i]; if(s === undefined || isEval(s)) return;
+  const nm = suppName(s), d = todayStr();
   const taken = (suppsLog[d] || []).slice();
-  const idx = taken.indexOf(name);
-  if(idx > -1) taken.splice(idx,1); else taken.push(name);
+  const idx = taken.indexOf(nm);
+  if(idx > -1) taken.splice(idx,1); else taken.push(nm);
   suppsLog[d] = taken; store.set('gg_supps_log', suppsLog);
   renderSupps();
 }
 function addSupp(){
   const v = prompt('Nome integratore (es. Creatina):'); if(v === null) return;
   const n = v.trim(); if(!n) return;
-  if(supps.indexOf(n) < 0){ supps.push(n); store.set('gg_supps', supps); }
+  if(!supps.some(function(s){ return suppName(s).toLowerCase() === n.toLowerCase(); })){
+    supps.push({ name:n, when:'Altro', dose:'', note:'' });
+    store.set('gg_supps', supps);
+  }
   renderSupps();
 }
 function removeSupp(i){
-  const name = supps[i]; if(name === undefined) return;
-  if(!confirm('Togliere "'+name+'" dalla lista?')) return;
+  const s = supps[i]; if(s === undefined) return;
+  if(!confirm('Togliere "'+suppName(s)+'" dalla lista?')) return;
   supps.splice(i,1); store.set('gg_supps', supps);
   renderSupps();
 }
