@@ -1,5 +1,5 @@
-const CACHE = 'gigio-gym-v31';
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg'];
+const CACHE = 'gigio-gym-v32';
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg', './img/erjola-bg.jpg'];
 // immagini esercizi impacchettate: precaricate così funzionano OFFLINE (in palestra)
 const IMG_SHELL = [
   './img/exercises/Barbell_Glute_Bridge/0.jpg',

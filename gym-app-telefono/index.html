@@ -33,6 +33,29 @@
     background-repeat: no-repeat, no-repeat;}
   .screen{display:none; min-height:100vh; flex-direction:column}
   .screen.active{display:flex}
+  /* sezioni a tendina */
+  .acc{margin:12px 16px 0}
+  .acc:last-of-type{margin-bottom:6px}
+  .acc-h{width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--panel); border:none; color:var(--txt); font-size:17px; font-weight:700;
+    padding:15px 16px; border-radius:var(--radius); box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .acc-c{color:var(--muted); font-size:15px; transition:transform .2s}
+  .acc.open .acc-h{border-radius:var(--radius) var(--radius) 0 0; box-shadow:none}
+  .acc.open .acc-c{transform:rotate(180deg)}
+  .acc-b{display:none}
+  .acc.open .acc-b{display:block}
+  .acc-b .water-title, .acc-b .w-title, .acc-b .supp-h > span:first-child{display:none}
+  .acc-b .water, .acc-b .weight, .acc-b .supp{margin:0; border-radius:0 0 var(--radius) var(--radius); box-shadow:none}
+  .acc-b #trainingSection{padding:6px 0 4px}
+  /* schermata motivazionale (scorri a destra dalla home) */
+  #scr-motiv{background:transparent}
+  #scr-motiv .motiv-wrap{flex:1; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; padding:48px 30px;
+    background:linear-gradient(180deg, rgba(10,10,22,.20), rgba(10,10,22,.5))}
+  .motiv-quote{font-size:29px; font-weight:800; line-height:1.36; text-shadow:0 2px 22px rgba(0,0,0,.65); max-width:640px}
+  .motiv-sub{margin-top:18px; font-size:15px; color:rgba(255,255,255,.85); font-weight:600}
+  .motiv-hint{position:fixed; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom));
+    text-align:center; color:rgba(255,255,255,.7); font-size:13px}
   header{display:flex; align-items:center; gap:12px; padding:18px 16px 10px;
     padding-top:calc(18px + env(safe-area-inset-top)); position:sticky; top:0;
     background:rgba(20,22,38,.35); backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px); z-index:5}
@@ -342,17 +365,18 @@
   <main>
     <div id="profileBar"></div>
     <div id="msgCard"></div>
-    <div id="waterCard"></div>
-    <div id="weightCard"></div>
-    <div id="suppCard"></div>
-    <div id="trainingSection">
-      <div class="home-sec">🏋️ Allenamento</div>
-      <div id="homeList"></div>
-      <div class="link-row">
-        <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
-        <button class="btn-ghost" onclick="show('scr-history'); renderHistory()">Storico</button>
+    <div class="acc" data-acc="water"><button class="acc-h" onclick="accToggle('water')"><span>💧 Acqua</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="waterCard"></div></div></div>
+    <div class="acc" data-acc="weight"><button class="acc-h" onclick="accToggle('weight')"><span>⚖️ Peso</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="weightCard"></div></div></div>
+    <div class="acc" data-acc="supp"><button class="acc-h" onclick="accToggle('supp')"><span>💊 Integratori</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="suppCard"></div></div></div>
+    <div class="acc" data-acc="training"><button class="acc-h" onclick="accToggle('training')"><span>🏋️ Allenamento</span><span class="acc-c">▾</span></button><div class="acc-b">
+      <div id="trainingSection">
+        <div id="homeList"></div>
+        <div class="link-row">
+          <button class="btn-ghost" onclick="openEditor(null)">+ Nuova scheda</button>
+          <button class="btn-ghost" onclick="show('scr-history'); renderHistory()">Storico</button>
+        </div>
       </div>
-    </div>
+    </div></div>
   </main>
 </div>
 
@@ -440,6 +464,15 @@
     <button id="tPlus" onclick="timerPlus()">+30 sec</button>
     <button id="tSkip" onclick="timerStop()">Salta</button>
   </div>
+</div>
+
+<!-- schermata motivazionale: scorri a destra dalla home -->
+<div class="screen" id="scr-motiv" onclick="show('scr-home')">
+  <div class="motiv-wrap">
+    <div class="motiv-quote" id="motivQuote"></div>
+    <div class="motiv-sub" id="motivSub"></div>
+  </div>
+  <div class="motiv-hint">tocca o scorri ← per tornare</div>
 </div>
 
 <!-- dettaglio esercizio: come si fa -->
@@ -1703,6 +1736,7 @@ function applyBackground(){
   let img;
   if(bg) img = 'url("' + bg + '")';
   else if(activeProfile === profiles[0]) img = "url('goku.jpg')";      // Gigio: Goku di default
+  else if(activeProfile === 'Erjola') img = "url('img/erjola-bg.jpg')"; // Erjola: sfondo dedicato
   else img = 'linear-gradient(160deg,#232739 0%,#272249 48%,#1b1730 100%)';  // altri: sfumatura elegante
   document.documentElement.style.setProperty('--bg-image', img);
 }
@@ -1819,6 +1853,61 @@ function removeSupp(i){
   renderSupps();
 }
 
+/* ================= TENDINE (sezioni apri/chiudi) ================= */
+function accToggle(key){
+  const acc = store.get('gg_acc', {});
+  acc[key] = !acc[key];
+  store.set('gg_acc', acc);
+  const el = document.querySelector('.acc[data-acc="'+key+'"]');
+  if(el) el.classList.toggle('open', !!acc[key]);
+}
+function applyAcc(){
+  const acc = store.get('gg_acc', {});   // chiuse di default
+  document.querySelectorAll('.acc[data-acc]').forEach(function(el){
+    el.classList.toggle('open', !!acc[el.getAttribute('data-acc')]);
+  });
+}
+
+/* ================= MOTIVAZIONE (scorri a destra) ================= */
+const MOTIV = [
+  'Un giorno o giorno uno. Decidi tu.',
+  'Non devi essere perfetto, solo costante.',
+  'Il corpo ottiene ciò che la mente crede.',
+  'Una volta a settimana batte zero. Sempre.',
+  'I risultati arrivano a chi non molla.',
+  'Allenati oggi per ringraziarti domani.',
+  'Piccoli passi, ogni giorno.',
+  'La fatica di oggi è la forza di domani.',
+  'Non conta quanto vai forte, conta che non ti fermi.',
+  'Fai oggi ciò che gli altri rimandano a domani.',
+  'Ogni allenamento è un mattone. Costruisci.',
+  'Sii più forte delle tue scuse.'
+];
+function motivOfDay(){
+  const d = new Date();
+  const n = d.getFullYear()*400 + (d.getMonth()*31 + d.getDate());
+  return MOTIV[n % MOTIV.length];
+}
+function openMotiv(){
+  document.getElementById('motivQuote').textContent = '“' + motivOfDay() + '”';
+  document.getElementById('motivSub').textContent = activeProfile ? ('Forza ' + activeProfile + ' 💪') : '';
+  show('scr-motiv');
+}
+(function(){
+  const home = document.getElementById('scr-home');
+  if(!home) return;
+  let sx=0, sy=0, ok=false;
+  home.addEventListener('touchstart', function(e){
+    if(e.touches.length !== 1){ ok=false; return; }
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; ok=true;
+  }, {passive:true});
+  home.addEventListener('touchend', function(e){
+    if(!ok) return; ok=false;
+    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(dx > 70 && Math.abs(dy) < 45) openMotiv();   // swipe verso destra → motivazione
+  }, {passive:true});
+})();
+
 /* ================= AVVIO ================= */
 applyBackground();
 renderProfileBar();
@@ -1828,6 +1917,7 @@ renderHome();
 renderWater();
 renderWeight();
 renderFoodHero();
+applyAcc();
 if('serviceWorker' in navigator){
   // aggiornamento automatico: quando c'è una versione nuova, l'app si ricarica da sola
   const _hadController = !!navigator.serviceWorker.controller;
