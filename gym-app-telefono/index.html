@@ -416,7 +416,7 @@
 /* ================= DATI ================= */
 const IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 const DEFAULT_SCHEDE = [{
-  id:'s1', name:'Petto, spalle e tricipiti',
+  id:'s1', owner:'Gigio', name:'Petto, spalle e tricipiti',
   groups:[
     {label:'Superset', exercises:[
       {name:'Chest press', sets:4, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
@@ -432,7 +432,7 @@ const DEFAULT_SCHEDE = [{
     ]}
   ]
 },{
-  id:'s2', name:'Gambe',
+  id:'s2', owner:'Gigio', name:'Gambe',
   groups:[
     {label:'Superset', exercises:[
       {name:'Front squat con bilanciere', sets:4, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
@@ -448,7 +448,7 @@ const DEFAULT_SCHEDE = [{
     ]}
   ]
 },{
-  id:'s3', name:'Schiena, dorsali posteriori, bicipiti',
+  id:'s3', owner:'Gigio', name:'Schiena, dorsali posteriori, bicipiti',
   groups:[
     {label:'Superset', exercises:[
       {name:'Lat machine presa inversa', sets:4, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
@@ -464,7 +464,7 @@ const DEFAULT_SCHEDE = [{
     ]}
   ]
 },{
-  id:'s4', name:'Erjola A — Gambe e spinta',
+  id:'s4', owner:'Erjola', name:'Erjola A — Gambe e spinta',
   groups:[
     {label:'Gambe', exercises:[
       {name:'Squat goblet con manubrio', sets:3, reps:'12 - 15', img:IMG+'Goblet_Squat/0.jpg'}
@@ -486,7 +486,7 @@ const DEFAULT_SCHEDE = [{
     ]}
   ]
 },{
-  id:'s5', name:'Erjola B — Schiena e tirata',
+  id:'s5', owner:'Erjola', name:'Erjola B — Schiena e tirata',
   groups:[
     {label:'Dorsali', exercises:[
       {name:'Lat machine avanti', sets:3, reps:'10 - 12', img:IMG+'Wide-Grip_Lat_Pulldown/0.jpg'}
@@ -508,7 +508,7 @@ const DEFAULT_SCHEDE = [{
     ]}
   ]
 },{
-  id:'s6', name:'Erjola C — Total body',
+  id:'s6', owner:'Erjola', name:'Erjola C — Total body',
   groups:[
     {label:'Glutei', exercises:[
       {name:'Ponte per glutei con bilanciere', sets:3, reps:'15', img:IMG+'Barbell_Glute_Bridge/0.jpg'}
@@ -559,6 +559,14 @@ if(!store.get('gg_seed_v3', false)){
   store.set('gg_schede', schede);
   store.set('gg_seed_v3', true);
 }
+// v4: assegna il proprietario alle schede predefinite già presenti sui telefoni
+// (Gigio: s1-s3, Erjola: s4-s6). Le schede create dall'utente restano condivise.
+if(!store.get('gg_seed_v4', false)){
+  var _own = {s1:'Gigio', s2:'Gigio', s3:'Gigio', s4:'Erjola', s5:'Erjola', s6:'Erjola'};
+  schede.forEach(function(s){ if(_own[s.id] && !s.owner) s.owner = _own[s.id]; });
+  store.set('gg_schede', schede);
+  store.set('gg_seed_v4', true);
+}
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
 
@@ -603,13 +611,18 @@ function imgTag(url){
 function repsUnit(reps){ return /[:]|sec/i.test(String(reps)) ? '' : ' ripetizioni'; }
 
 /* ================= HOME ================= */
+function visibleSchede(){
+  // mostra le schede senza proprietario (condivise) e quelle del profilo attivo
+  return schede.filter(s=> !s.owner || s.owner === activeProfile);
+}
 function renderHome(){
   const el = document.getElementById('homeList');
-  if(!schede.length){
+  const list = visibleSchede();
+  if(!list.length){
     el.innerHTML = '<div class="empty">Nessuna scheda.<br>Creane una con “Nuova scheda”.</div>';
     return;
   }
-  el.innerHTML = schede.map(s=>{
+  el.innerHTML = list.map(s=>{
     const nEx = s.groups.reduce((a,g)=>a+g.exercises.length,0);
     return '<div class="card" onclick="openScheda(\''+s.id+'\')">'+
       '<div class="t"><b>'+esc(s.name)+'</b><span>'+nEx+' esercizi · '+s.groups.length+' gruppi</span></div>'+
@@ -809,7 +822,7 @@ function renderHistory(){
 function openEditor(id){
   const s = id ? schede.find(x=>x.id===id) : null;
   state.editor = s ? JSON.parse(JSON.stringify(s))
-                   : { id:'s'+Date.now(), name:'', groups:[{label:'Superset', exercises:[edNewEx()]}] };
+                   : { id:'s'+Date.now(), owner:activeProfile, name:'', groups:[{label:'Superset', exercises:[edNewEx()]}] };
   state.editor._isNew = !s;
   document.getElementById('edTitle').textContent = s ? 'Modifica scheda' : 'Nuova scheda';
   document.getElementById('edName').value = state.editor.name;
@@ -1422,7 +1435,7 @@ function switchProfile(name){
   activeProfile = name; store.set('gg_active_profile', name);
   reloadProfileData();
   applyBackground();
-  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps();
+  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps(); renderHome();
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
 }
