@@ -1251,7 +1251,7 @@ function addRecent(f){
   store.set('gg_food_recent', foodRecent);
 }
 function pickFood(f){
-  const v = prompt('Quanti grammi di "'+f.name+'"?', '100'); if(v === null) return;
+  const v = prompt('Quanti grammi di "'+f.name+'"?', String(f.portion || 100)); if(v === null) return;
   const g = num(v); if(!(g > 0)){ toast('Quantità non valida'); return; }
   const item = { name:f.name, grams:g, base:{ k:num(f.k), p:num(f.p), c:num(f.c), f:num(f.f) } };
   addRecent(f);
@@ -1267,7 +1267,7 @@ function pickDish(d){
   toast('Piatto aggiunto ✓'); show('scr-food'); renderFood(); renderFoodHero();
 }
 function pickSrc(src, i){
-  const f = src === 'res' ? foodSearchResults[i] : src === 'rec' ? foodRecent[i] : foodCustom[i];
+  const f = src === 'base' ? foodBaseResults[i] : src === 'res' ? foodSearchResults[i] : src === 'rec' ? foodRecent[i] : foodCustom[i];
   if(f) pickFood(f);
 }
 function pickDishIdx(i){ const d = foodDishes[i]; if(d) pickDish(d); }
@@ -1285,25 +1285,72 @@ function renderFoodSearch(results){
   if(results !== undefined) foodSearchResults = results || [];
   const el = document.getElementById('foodSearchBody'); if(!el) return;
   let h = '';
-  if(foodSearchResults.length) h += '<div class="fsec-lab">Risultati</div>' + foodSearchResults.map((f,i) => pickRow(f,'res',i)).join('');
+  if(foodBaseResults.length)   h += '<div class="fsec-lab">Alimenti base</div>' + foodBaseResults.map((f,i) => pickRow(f,'base',i)).join('');
+  if(foodSearchResults.length) h += '<div class="fsec-lab">Prodotti (online)</div>' + foodSearchResults.map((f,i) => pickRow(f,'res',i)).join('');
   if(foodRecent.length)        h += '<div class="fsec-lab">Recenti / preferiti</div>' + foodRecent.map((f,i) => pickRow(f,'rec',i)).join('');
   if(foodCustom.length)        h += '<div class="fsec-lab">I miei alimenti</div>' + foodCustom.map((f,i) => pickRow(f,'cus',i)).join('');
   if(foodDishes.length)        h += '<div class="fsec-lab">Piatti salvati</div>' + foodDishes.map((d,i) => dishRow(d,i)).join('');
   if(!h) h = '<div class="fmsg">Cerca un alimento qui sopra, oppure crea un alimento o un piatto con i pulsanti.</div>';
   el.innerHTML = h;
 }
+/* ===== alimenti base (valori per 100 g) — cercati subito e OFFLINE, così "banana" si trova ===== */
+function bf(name,k,p,c,f,portion){ return {name:name, k:k, p:p, c:c, f:f, portion:portion, base:true}; }
+const BASE_FOODS = [
+  // Frutta
+  bf('Banana',89,1.1,23,0.3,120), bf('Mela',52,0.3,14,0.2,150), bf('Pera',57,0.4,15,0.1,150),
+  bf('Arancia',47,0.9,12,0.1,150), bf('Fragole',32,0.7,7.7,0.3,150), bf('Uva',69,0.7,18,0.2,100),
+  bf('Kiwi',61,1.1,15,0.5,100), bf('Ananas',50,0.5,13,0.1,120), bf('Anguria',30,0.6,8,0.2,200),
+  bf('Pesca',39,0.9,10,0.3,150), bf('Albicocche',48,1.4,11,0.4,100), bf('Mandarini',53,0.8,13,0.3,100),
+  bf('Melone',34,0.8,8,0.2,200), bf('Mirtilli',57,0.7,14,0.3,100),
+  // Verdura
+  bf('Pomodoro',18,0.9,3.9,0.2,150), bf('Insalata (lattuga)',15,1.4,2.9,0.2,80), bf('Zucchine',17,1.2,3.1,0.3,150),
+  bf('Melanzane',25,1,6,0.2,150), bf('Carote',41,0.9,10,0.2,100), bf('Patate',77,2,17,0.1,200),
+  bf('Patate dolci',86,1.6,20,0.1,200), bf('Spinaci',23,2.9,3.6,0.4,100), bf('Broccoli',34,2.8,7,0.4,150),
+  bf('Fagiolini',31,1.8,7,0.2,150), bf('Peperoni',31,1,6,0.3,100), bf('Cipolla',40,1.1,9,0.1,50),
+  bf('Finocchio',31,1.2,7,0.2,100), bf('Cetriolo',15,0.7,3.6,0.1,100),
+  // Proteine (carne, pesce, uova)
+  bf('Petto di pollo',165,31,0,3.6,150), bf('Petto di tacchino',135,29,0,1,150), bf('Manzo magro',187,26,0,9,150),
+  bf('Fesa di vitello',107,21,0,2,150), bf('Lonza di maiale',143,26,0,4,150), bf('Prosciutto crudo',145,26,0.5,4,50),
+  bf('Prosciutto cotto',145,20,1,7,50), bf('Bresaola',151,32,0.5,2,50), bf('Tonno al naturale',116,26,0,1,80),
+  bf('Salmone',208,20,0,13,150), bf('Merluzzo',82,18,0,0.7,150), bf('Gamberi',99,24,0.2,0.3,150),
+  bf('Uovo',143,13,1.1,10,50), bf('Albume',52,11,0.7,0.2,100),
+  // Latticini
+  bf('Latte parz. scremato',46,3.3,5,1.6,200), bf('Yogurt greco 0%',59,10,3.6,0.4,170), bf('Yogurt bianco intero',61,3.5,4.7,3.3,125),
+  bf('Skyr',63,11,4,0.2,150), bf('Mozzarella',253,18,1,20,100), bf('Ricotta',174,11,3,13,100),
+  bf('Parmigiano',392,32,0,29,30), bf('Grana',398,33,0,29,30), bf('Fiocchi di latte',98,11,3.4,4.3,100),
+  // Carboidrati / cereali
+  bf('Pasta (cruda)',371,13,75,1.5,80), bf('Pasta (cotta)',158,5.8,31,0.9,200), bf('Riso (crudo)',358,7,79,0.6,80),
+  bf('Riso (cotto)',130,2.7,28,0.3,200), bf('Pane',265,9,49,3.2,50), bf('Pane integrale',247,9,41,3.4,50),
+  bf('Fette biscottate',408,11,72,6,20), bf('Fiocchi d’avena',389,17,66,7,50), bf('Farro',340,15,67,2.5,80),
+  bf('Cous cous (crudo)',376,13,77,0.6,80),
+  // Legumi
+  bf('Ceci (cotti)',164,9,27,2.6,150), bf('Lenticchie (cotte)',116,9,20,0.4,150), bf('Fagioli (cotti)',127,9,23,0.5,150),
+  // Grassi / frutta secca
+  bf('Olio d’oliva',884,0,0,100,10), bf('Burro',717,0.9,0.1,81,10), bf('Mandorle',579,21,22,50,30),
+  bf('Noci',654,15,14,65,30), bf('Avocado',160,2,9,15,100), bf('Arachidi',567,26,16,49,30),
+  // Dolci / vari
+  bf('Miele',304,0.3,82,0,20), bf('Crema alle nocciole',539,6,57,31,15), bf('Cioccolato fondente',546,7,46,31,25),
+  // Integratori / proteici
+  bf('Proteine in polvere (whey)',380,80,7,6,30), bf('Barretta proteica',360,32,36,11,60), bf('Creatina (5 g)',0,0,0,0,5)
+];
+let foodBaseResults = [];
 async function doFoodSearch(){
   const q = document.getElementById('foodQ').value.trim();
   const body = document.getElementById('foodSearchBody');
-  if(!q){ renderFoodSearch([]); return; }
-  body.innerHTML = '<div class="fmsg">Cerco "'+esc(q)+'"…</div>';
+  if(!q){ foodBaseResults = []; renderFoodSearch([]); return; }
+  // 1) alimenti base: subito e anche offline
+  foodBaseResults = rankFood(BASE_FOODS, q).slice(0, 12);
+  renderFoodSearch([]);                 // mostra subito base + recenti
+  body.insertAdjacentHTML('afterbegin', '<div class="fmsg" id="foodLoading">Cerco anche online "'+esc(q)+'"…</div>');
+  // 2) ricerca online in aggiunta (prodotti confezionati)
   try{
     const res = await offSearch(q);
     renderFoodSearch(res);
-    if(!res.length) body.insertAdjacentHTML('afterbegin', '<div class="fmsg">Nessun risultato per "'+esc(q)+'". Puoi crearlo a mano con "+ Crea alimento".</div>');
+    const ld = document.getElementById('foodLoading'); if(ld) ld.remove();
+    if(!res.length && !foodBaseResults.length) body.insertAdjacentHTML('afterbegin', '<div class="fmsg">Nessun risultato per "'+esc(q)+'". Puoi crearlo a mano con "+ Crea alimento".</div>');
   }catch(e){
     renderFoodSearch([]);
-    body.insertAdjacentHTML('afterbegin', '<div class="fmsg">📴 Sei offline: la ricerca non è disponibile.<br>Usa i tuoi recenti/preferiti qui sotto.</div>');
+    if(!foodBaseResults.length) body.insertAdjacentHTML('afterbegin', '<div class="fmsg">📴 Sei offline: la ricerca online non è disponibile.<br>Usa gli alimenti base, i recenti o i tuoi alimenti.</div>');
   }
 }
 const FOOD_STOP = new Set(['di','e','con','al','all','alla','allo','agli','ai','la','il','lo','le','i','gli',
