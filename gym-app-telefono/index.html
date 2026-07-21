@@ -641,7 +641,11 @@ const DEFAULT_SUPPS_ERJOLA = [
   {name:'Psillo (fibra) — capsule', when:'Sera', dose:'3 capsule (poi fino a 6)', note:'Dopo cena, ~2 h prima di dormire. Ogni volta con un bicchiere pieno d’acqua (250 ml) e bevi ancora dopo. Lontano 1–2 h dal ferro'},
   {name:'Ashwagandha', when:'Quando serve', dose:'', note:'La sera, quando serve, per stress e sonno'},
   {name:'Lassativo alle 12 erbe', when:'Quando serve', dose:'', note:'Solo ogni tanto quando è bloccata, non tutti i giorni (a lungo andare l’intestino si impigrisce)'},
-  {name:'Magnesio citrato', when:'Da valutare', dose:'', note:'La sera: aiuta intestino e sonno. Partire con dose bassa. Da confermare in farmacia'}
+  {name:'Magnesio citrato', when:'Da valutare', dose:'', note:'La sera: aiuta intestino e sonno. Partire con dose bassa. Da confermare in farmacia'},
+  {name:'💧 Bere 1,5–2 L d’acqua', when:'Abitudini', dose:'', note:'Poco alla volta durante la giornata: è la base per la regolarità'},
+  {name:'🥝 Fibra dai cibi (kiwi, prugne, verdura)', when:'Abitudini', dose:'', note:'Aiutano il transito intestinale'},
+  {name:'🚶‍♀️ Camminata / movimento', when:'Abitudini', dose:'', note:'Anche 20–30 min: muoversi stimola l’intestino'},
+  {name:'🚽 Bagno con calma, senza fretta', when:'Abitudini', dose:'', note:'Non trattenere lo stimolo; provaci con calma, meglio dopo i pasti'}
 ];
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
@@ -747,6 +751,13 @@ if(!store.get('gg_supps_erjola_v2', false)){
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_ERJOLA));
   _mem[ek] = seed; try{ localStorage.setItem(ek, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_erjola_v2', true);
+}
+// v3: aggiunge le "Abitudini" (acqua, fibra, movimento, bagno) alla lista di Erjola
+if(!store.get('gg_supps_erjola_v3', false)){
+  const ek = 'gg_p_Erjola_gg_supps';
+  const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_ERJOLA));
+  _mem[ek] = seed; try{ localStorage.setItem(ek, JSON.stringify(seed)); }catch(e){}
+  store.set('gg_supps_erjola_v3', true);
 }
 // ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
 sessions = store.get('gg_sessions', []);
@@ -1820,7 +1831,7 @@ function chooseBackground(){
 
 /* ================= INTEGRATORI ================= */
 // ordine dei momenti della giornata
-const SUPP_ORDER = ['Mattina','Durante la giornata','Sera','Quando serve','Da valutare','Altro'];
+const SUPP_ORDER = ['Mattina','Durante la giornata','Sera','Abitudini','Quando serve','Da valutare','Altro'];
 // compatibilità: le voci vecchie erano semplici stringhe; le nuove sono oggetti {name,when,dose,note}
 function suppName(s){ return (s && typeof s === 'object') ? (s.name || '') : String(s || ''); }
 function suppWhen(s){ const w = (s && typeof s === 'object') ? s.when : ''; return SUPP_ORDER.indexOf(w) > -1 ? w : 'Altro'; }
@@ -1828,7 +1839,7 @@ function suppDose(s){ return (s && typeof s === 'object') ? (s.dose || '') : '';
 function suppNote(s){ return (s && typeof s === 'object') ? (s.note || '') : ''; }
 function isEval(s){ return suppWhen(s) === 'Da valutare'; }
 // "di routine" = da prendere ogni giorno (contano nel conteggio giornaliero e in "cosa dimentico")
-function isRoutine(s){ const w = suppWhen(s); return w === 'Mattina' || w === 'Durante la giornata' || w === 'Sera'; }
+function isRoutine(s){ const w = suppWhen(s); return w === 'Mattina' || w === 'Durante la giornata' || w === 'Sera' || w === 'Abitudini'; }
 
 function renderSupps(){
   const el = document.getElementById('suppCard'); if(!el) return;
