@@ -635,6 +635,14 @@ const DEFAULT_SUPPS_GIGIO = [
   {name:'Garcinia Cambogia', when:'Da valutare', dose:'', note:'Evidenze deboli sul dimagrimento e possibili problemi al fegato: non è una priorità'},
   {name:'Bromelina', when:'Da valutare', dose:'', note:'Non ancora presa. Digestiva → durante i pasti; antinfiammatoria → a stomaco vuoto tra i pasti'}
 ];
+// programma integratori predefinito di Erjola
+const DEFAULT_SUPPS_ERJOLA = [
+  {name:'Multivitaminico con ferro', when:'Mattina', dose:'', note:'Con la colazione. Meglio con vitamina C (spremuta/kiwi) e lontano da caffè, tè e latticini. Nota: il ferro può dare stitichezza'},
+  {name:'Psillo (fibra) — capsule', when:'Sera', dose:'3 capsule (poi fino a 6)', note:'Dopo cena, ~2 h prima di dormire. Ogni volta con un bicchiere pieno d’acqua (250 ml) e bevi ancora dopo. Lontano 1–2 h dal ferro'},
+  {name:'Ashwagandha', when:'Quando serve', dose:'', note:'La sera, quando serve, per stress e sonno'},
+  {name:'Lassativo alle 12 erbe', when:'Quando serve', dose:'', note:'Solo ogni tanto quando è bloccata, non tutti i giorni (a lungo andare l’intestino si impigrisce)'},
+  {name:'Magnesio (es. citrato)', when:'Da valutare', dose:'', note:'La sera: può aiutare intestino e sonno. Da confermare in farmacia'}
+];
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
 // gg_last (pesi dell'ultima volta) e gg_sessions (storico) sono per-profilo: ognuno tiene i suoi.
@@ -725,6 +733,13 @@ if(!store.get('gg_supps_seed_v2', false)){
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
+}
+// carica il programma integratori di Erjola nel suo profilo (una volta sola)
+if(!store.get('gg_supps_erjola_v1', false)){
+  const ek = 'gg_p_Erjola_gg_supps';
+  const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_ERJOLA));
+  _mem[ek] = seed; try{ localStorage.setItem(ek, JSON.stringify(seed)); }catch(e){}
+  store.set('gg_supps_erjola_v1', true);
 }
 // ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
 sessions = store.get('gg_sessions', []);
@@ -1805,6 +1820,8 @@ function suppWhen(s){ const w = (s && typeof s === 'object') ? s.when : ''; retu
 function suppDose(s){ return (s && typeof s === 'object') ? (s.dose || '') : ''; }
 function suppNote(s){ return (s && typeof s === 'object') ? (s.note || '') : ''; }
 function isEval(s){ return suppWhen(s) === 'Da valutare'; }
+// "di routine" = da prendere ogni giorno (contano nel conteggio giornaliero e in "cosa dimentico")
+function isRoutine(s){ const w = suppWhen(s); return w === 'Mattina' || w === 'Durante la giornata' || w === 'Sera'; }
 
 function renderSupps(){
   const el = document.getElementById('suppCard'); if(!el) return;
@@ -1815,8 +1832,8 @@ function renderSupps(){
     return;
   }
   const taken = suppsLog[todayStr()] || [];
-  // il conteggio giornaliero esclude i "Da valutare"
-  const daily  = supps.filter(function(s){ return !isEval(s); });
+  // il conteggio giornaliero considera solo gli integratori di routine (mattina/durante/sera)
+  const daily  = supps.filter(isRoutine);
   const takenN = daily.filter(function(s){ return taken.indexOf(suppName(s)) > -1; }).length;
 
   let body = '';
@@ -1844,8 +1861,14 @@ function renderSupps(){
   const rep = daily.length
     ? (mancaN>0 ? '⏳ Ne mancano '+mancaN+' oggi' : '✅ Tutti presi oggi 💪')
     : '';
-  const warn = '<div class="supp-warn">💧 <b>Bevi tanto:</b> creatina e psillo richiedono molta acqua.<br>'+
-    '⚠️ <b>Zinco doppio</b> (ZMA + Opti-Men): valuta col medico se alternarli.</div>';
+  let warn = '';
+  if(activeProfile === 'Erjola'){
+    warn = '<div class="supp-warn">💧 <b>Acqua:</b> 1,5–2 L al giorno. Con lo psillo un bicchiere pieno (250 ml) per volta e bevi ancora dopo.<br>'+
+      '⚠️ <b>Il ferro</b> può dare stitichezza: prendilo con vitamina C e lontano 1–2 h dallo psillo.</div>';
+  } else {
+    warn = '<div class="supp-warn">💧 <b>Bevi tanto:</b> creatina e psillo richiedono molta acqua.<br>'+
+      '⚠️ <b>Zinco doppio</b> (ZMA + Opti-Men): valuta col medico se alternarli.</div>';
+  }
   el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
     '<span class="supp-count">'+takenN+'/'+daily.length+'</span>'+
     '<button class="supp-add supp-stats" onclick="openSuppStats()" title="Cosa dimentico">📊</button>'+
