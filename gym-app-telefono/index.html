@@ -1829,7 +1829,19 @@ renderWater();
 renderWeight();
 renderFoodHero();
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  // aggiornamento automatico: quando c'è una versione nuova, l'app si ricarica da sola
+  const _hadController = !!navigator.serviceWorker.controller;
+  let _reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(_reloading || !_hadController) return;   // niente reload al primissimo avvio
+    _reloading = true; window.location.reload();
+  });
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      reg.update();
+      setInterval(function(){ reg.update(); }, 30*60*1000);  // controlla ogni 30 min
+    }).catch(()=>{});
+  });
 }
 </script>
 </body>
