@@ -271,6 +271,21 @@
   .supp-warn{background:rgba(231,195,107,.12); border:1px solid rgba(231,195,107,.35);
     border-radius:10px; padding:9px 11px; margin:8px 0 2px; font-size:12.5px; line-height:1.4; color:#EBD8A6}
   .supp-warn b{color:#F1E2B4}
+  .supp-stats{background:var(--row) !important; color:var(--txt) !important; font-size:15px !important}
+  /* vista "cosa dimentico" */
+  #statsSheet{position:fixed; inset:0; z-index:31; display:none; background:rgba(10,12,22,.72); align-items:flex-end}
+  #statsSheet.open{display:flex}
+  #statsSheet .st-card{background:var(--panel); width:100%; border-radius:22px 22px 0 0;
+    padding:16px 18px calc(18px + env(safe-area-inset-bottom)); max-height:82vh; overflow:auto}
+  #statsSheet h2{margin:0 0 4px; font-size:20px}
+  .st-sub{color:var(--muted); font-size:14px; margin-bottom:8px}
+  .st-row{display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,.06)}
+  .st-row .st-n{font-size:15px; font-weight:600}
+  .st-bar{height:7px; background:var(--row); border-radius:5px; overflow:hidden; margin-top:6px}
+  .st-bar>div{height:100%; background:var(--green); border-radius:5px}
+  .st-row.miss .st-bar>div{background:#E7C36B}
+  .st-v{font-size:13px; color:var(--muted); font-weight:700; white-space:nowrap}
+  .st-row.miss .st-v{color:#E7C36B}
 
   /* messaggio personale */
   #msgSheet{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none;
@@ -463,6 +478,16 @@
   <div class="timer-btns">
     <button id="tPlus" onclick="timerPlus()">+30 sec</button>
     <button id="tSkip" onclick="timerStop()">Salta</button>
+  </div>
+</div>
+
+<!-- vista integratori: cosa dimentico -->
+<div id="statsSheet" onclick="if(event.target===this) closeSuppStats()">
+  <div class="st-card">
+    <h2>📊 Cosa dimentico</h2>
+    <div class="st-sub" id="statsSub"></div>
+    <div id="statsBody"></div>
+    <button class="ex-close" onclick="closeSuppStats()">Chiudi</button>
   </div>
 </div>
 
@@ -1823,6 +1848,7 @@ function renderSupps(){
     '⚠️ <b>Zinco doppio</b> (ZMA + Opti-Men): valuta col medico se alternarli.</div>';
   el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
     '<span class="supp-count">'+takenN+'/'+daily.length+'</span>'+
+    '<button class="supp-add supp-stats" onclick="openSuppStats()" title="Cosa dimentico">📊</button>'+
     '<button class="supp-add" onclick="addSupp()" title="Aggiungi">＋</button></div>'+
     warn + body +
     (rep?'<div class="supp-rep">'+rep+'</div>':'')+
@@ -1852,6 +1878,45 @@ function removeSupp(i){
   supps.splice(i,1); store.set('gg_supps', supps);
   renderSupps();
 }
+/* traccia cosa dimentichi: aderenza sugli ultimi giorni (dai giorni registrati) */
+function suppStats(days){
+  const today = new Date();
+  const names = supps.filter(function(s){ return !isEval(s); }).map(suppName);
+  const taken = {}; names.forEach(function(n){ taken[n] = 0; });
+  let active = 0;
+  for(let i=0;i<days;i++){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    const log = suppsLog[key];
+    if(log && log.length){ active++; names.forEach(function(n){ if(log.indexOf(n) > -1) taken[n]++; }); }
+  }
+  return { active:active, names:names, taken:taken };
+}
+function openSuppStats(){
+  const days = 14, st = suppStats(days);
+  const sub = document.getElementById('statsSub'), body = document.getElementById('statsBody');
+  document.getElementById('statsSheet').classList.add('open');
+  if(!st.active){
+    sub.textContent = '';
+    body.innerHTML = '<div class="supp-empty">Ancora nessun dato: spunta gli integratori giorno per giorno e qui vedrai cosa dimentichi più spesso.</div>';
+    return;
+  }
+  const rows = st.names.map(function(n){ return { n:n, t:st.taken[n], miss:st.active - st.taken[n] }; })
+    .sort(function(a,b){ return b.miss - a.miss; });
+  const worst = rows.filter(function(r){ return r.miss > 0; });
+  sub.textContent = 'Ultimi ' + days + ' giorni · ' + st.active + (st.active===1?' giorno':' giorni') + ' registrati';
+  const head = worst.length
+    ? '<div class="supp-warn">Dimentichi più spesso: <b>' + esc(worst[0].n) + '</b>' + (worst[1] ? ' e <b>' + esc(worst[1].n) + '</b>' : '') + '</div>'
+    : '<div class="supp-warn" style="background:rgba(126,217,167,.12); border-color:rgba(126,217,167,.4); color:#bfe9d2">Grande, non hai saltato niente in questi giorni! 💪</div>';
+  body.innerHTML = head + rows.map(function(r){
+    const pct = st.active ? Math.round(r.t / st.active * 100) : 0;
+    return '<div class="st-row'+(r.miss>0?' miss':'')+'">'+
+      '<div style="flex:1; min-width:0"><div class="st-n">'+esc(r.n)+'</div>'+
+      '<div class="st-bar"><div style="width:'+pct+'%"></div></div></div>'+
+      '<div class="st-v">'+r.t+'/'+st.active+'</div></div>';
+  }).join('');
+}
+function closeSuppStats(){ document.getElementById('statsSheet').classList.remove('open'); }
 
 /* ================= TENDINE (sezioni apri/chiudi) ================= */
 function accToggle(key){
