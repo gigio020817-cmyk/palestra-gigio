@@ -641,7 +641,7 @@ const DEFAULT_SUPPS_ERJOLA = [
   {name:'Psillo (fibra) — capsule', when:'Sera', dose:'3 capsule (poi fino a 6)', note:'Dopo cena, ~2 h prima di dormire. Ogni volta con un bicchiere pieno d’acqua (250 ml) e bevi ancora dopo. Lontano 1–2 h dal ferro'},
   {name:'Ashwagandha', when:'Quando serve', dose:'', note:'La sera, quando serve, per stress e sonno'},
   {name:'Lassativo alle 12 erbe', when:'Quando serve', dose:'', note:'Solo ogni tanto quando è bloccata, non tutti i giorni (a lungo andare l’intestino si impigrisce)'},
-  {name:'Magnesio (es. citrato)', when:'Da valutare', dose:'', note:'La sera: può aiutare intestino e sonno. Da confermare in farmacia'}
+  {name:'Magnesio citrato', when:'Da valutare', dose:'', note:'La sera: aiuta intestino e sonno. Partire con dose bassa. Da confermare in farmacia'}
 ];
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
@@ -740,6 +740,13 @@ if(!store.get('gg_supps_erjola_v1', false)){
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_ERJOLA));
   _mem[ek] = seed; try{ localStorage.setItem(ek, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_erjola_v1', true);
+}
+// v2: aggiorna la lista di Erjola alla versione più recente (es. "Magnesio citrato")
+if(!store.get('gg_supps_erjola_v2', false)){
+  const ek = 'gg_p_Erjola_gg_supps';
+  const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_ERJOLA));
+  _mem[ek] = seed; try{ localStorage.setItem(ek, JSON.stringify(seed)); }catch(e){}
+  store.set('gg_supps_erjola_v2', true);
 }
 // ora che il profilo è attivo, leggo storico e pesi dell'ultima volta del profilo
 sessions = store.get('gg_sessions', []);
