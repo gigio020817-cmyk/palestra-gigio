@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#232739">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -16,6 +16,8 @@
     --red:#E57373; --radius:14px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  /* niente zoom col doppio tap (mantiene lo scroll normale) */
+  html,body{touch-action:manipulation}
   html{background:var(--bg);}
   html,body{margin:0; padding:0; color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -159,6 +161,25 @@
   .timer-btns button{flex:1; border:none; border-radius:14px; padding:14px; font-size:16px; font-weight:700}
   #tPlus{background:var(--row); color:var(--txt)}
   #tSkip{background:var(--green); color:#173324}
+  /* dettaglio esercizio: come si fa (mostra il movimento) */
+  #exSheet{position:fixed; inset:0; z-index:30; display:none; background:rgba(10,12,22,.72); align-items:flex-end}
+  #exSheet.open{display:flex}
+  #exSheet .ex-card{background:var(--panel); width:100%; border-radius:22px 22px 0 0;
+    padding:16px 18px calc(18px + env(safe-area-inset-bottom)); box-shadow:0 -8px 30px rgba(0,0,0,.4)}
+  #exSheet .ex-hero{width:100%; aspect-ratio:1/1; max-height:42vh; background:#fff; border-radius:16px;
+    overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:12px}
+  #exSheet .ex-hero img{width:100%; height:100%; object-fit:contain}
+  #exSheet .ex-hero .ph{font-size:60px}
+  #exSheet h2{margin:0 0 4px; font-size:20px}
+  #exSheet .ex-sub{color:var(--muted); font-size:15px}
+  #exSheet .ex-hint{color:var(--muted); font-size:13px; margin-top:10px}
+  #exSheet .ex-close{margin-top:14px; width:100%; border:none; border-radius:14px; padding:14px;
+    font-size:16px; font-weight:700; background:var(--row); color:var(--txt)}
+  .sc-ex{cursor:pointer}
+  .sc-info .howto{color:var(--green); font-size:12.5px; font-weight:600; margin-top:4px}
+  .sc-meta{background:var(--panel); border-radius:12px; padding:10px 14px; margin:0 0 12px;
+    font-size:15px; font-weight:600}
+  .sc-meta .sc-tap{color:var(--muted); font-size:13px; font-weight:500}
 
   /* storico */
   .sess{margin:0 16px 12px; background:var(--row); border-radius:var(--radius); padding:14px 16px}
@@ -403,10 +424,21 @@
 <!-- timer -->
 <div id="timerSheet">
   <div style="color:var(--muted); font-size:15px; font-weight:600">RECUPERO</div>
-  <div id="timerVal">1:30</div>
+  <div id="timerVal">1:15</div>
   <div class="timer-btns">
     <button id="tPlus" onclick="timerPlus()">+30 sec</button>
     <button id="tSkip" onclick="timerStop()">Salta</button>
+  </div>
+</div>
+
+<!-- dettaglio esercizio: come si fa -->
+<div id="exSheet" onclick="if(event.target===this) closeExDetail()">
+  <div class="ex-card">
+    <div class="ex-hero"><img id="exHeroImg" alt=""><div id="exHeroPh" class="ph" style="display:none">🏋️</div></div>
+    <h2 id="exDetName"></h2>
+    <div class="ex-sub" id="exDetSub"></div>
+    <div class="ex-hint">L'immagine alterna i due momenti del movimento (inizio ↔ fine).</div>
+    <button class="ex-close" onclick="closeExDetail()">Chiudi</button>
   </div>
 </div>
 
@@ -414,45 +446,45 @@
 
 <script>
 /* ================= DATI ================= */
-const IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+const IMG = './img/exercises/'; // immagini impacchettate nell'app: funzionano offline
 const DEFAULT_SCHEDE = [{
   id:'s1', owner:'Gigio', name:'Petto, spalle e tricipiti',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Chest press', sets:4, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
-      {name:'Lento avanti con bilanciere seduto', sets:4, reps:'8 - 10', img:IMG+'Barbell_Shoulder_Press/0.jpg'}
+      {name:'Chest press', sets:3, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
+      {name:'Lento avanti con bilanciere seduto', sets:3, reps:'8 - 10', img:IMG+'Barbell_Shoulder_Press/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Distensioni su panca piana con manubri', sets:4, reps:'8 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
-      {name:'Alzate laterali con manubri', sets:4, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
+      {name:'Distensioni su panca piana con manubri', sets:3, reps:'8 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
+      {name:'Alzate laterali con manubri', sets:3, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Croci alla pectoral machine', sets:4, reps:'10 - 12', img:IMG+'Butterfly/0.jpg'},
-      {name:'French press con manubri seduto due braccia', sets:4, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
+      {name:'Croci alla pectoral machine', sets:3, reps:'10 - 12', img:IMG+'Butterfly/0.jpg'},
+      {name:'French press con manubri seduto due braccia', sets:3, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
     ]}
   ]
 },{
   id:'s2', owner:'Gigio', name:'Gambe',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Front squat con bilanciere', sets:4, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
-      {name:'Stacco rumeno con bilanciere', sets:4, reps:'8 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
+      {name:'Front squat con bilanciere', sets:3, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
+      {name:'Stacco rumeno con bilanciere', sets:3, reps:'8 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
     ]},
     {label:'Superset', exercises:[
       {name:'Affondi in movimento con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Lunges/0.jpg'},
       {name:'Hip thrust con bilanciere', sets:3, reps:'10 - 12', img:IMG+'Barbell_Hip_Thrust/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Sollevamento polpacci in piedi a corpo libero', sets:4, reps:'15 - 20', img:IMG+'Standing_Calf_Raises/0.jpg'},
-      {name:'Plank con oscillazioni dei fianchi', sets:4, reps:'00:45', img:IMG+'Plank/0.jpg'}
+      {name:'Sollevamento polpacci in piedi a corpo libero', sets:3, reps:'15 - 20', img:IMG+'Standing_Calf_Raises/0.jpg'},
+      {name:'Plank con oscillazioni dei fianchi', sets:3, reps:'00:45', img:IMG+'Plank/0.jpg'}
     ]}
   ]
 },{
   id:'s3', owner:'Gigio', name:'Schiena, dorsali posteriori, bicipiti',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Lat machine presa inversa', sets:4, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
-      {name:'Rematore con kettlebell a un braccio', sets:4, reps:'8 - 12', img:IMG+'One-Arm_Kettlebell_Row/0.jpg'}
+      {name:'Lat machine presa inversa', sets:3, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
+      {name:'Rematore con kettlebell a un braccio', sets:3, reps:'8 - 12', img:IMG+'One-Arm_Kettlebell_Row/0.jpg'}
     ]},
     {label:'Superset', exercises:[
       {name:'Scrollate con bilanciere', sets:3, reps:'12 - 15', img:IMG+'Barbell_Shrug/0.jpg'},
@@ -472,39 +504,33 @@ const DEFAULT_SCHEDE = [{
     {label:'Affondi', exercises:[
       {name:'Affondi sul posto con manubri (per gamba)', sets:3, reps:'10', img:IMG+'Dumbbell_Lunges/0.jpg'}
     ]},
-    {label:'Petto', exercises:[
-      {name:'Distensioni su panca con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'}
-    ]},
-    {label:'Spalle', exercises:[
+    {label:'Petto + spalle (superset)', exercises:[
+      {name:'Distensioni su panca con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
       {name:'Alzate laterali con manubri', sets:3, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
     ]},
     {label:'Core', exercises:[
-      {name:'Plank', sets:3, reps:'30 - 45 sec', img:IMG+'Plank/0.jpg'}
+      {name:'Plank', sets:2, reps:'30 - 45 sec', img:IMG+'Plank/0.jpg'}
     ]},
     {label:'Cardio', exercises:[
-      {name:'Vogatore — ritmo tranquillo', sets:1, reps:'10:00', img:''}
+      {name:'Vogatore — ritmo tranquillo', sets:1, reps:'03:30', img:''}
     ]}
   ]
 },{
   id:'s5', owner:'Erjola', name:'Erjola B — Schiena e tirata',
   groups:[
-    {label:'Dorsali', exercises:[
-      {name:'Lat machine avanti', sets:3, reps:'10 - 12', img:IMG+'Wide-Grip_Lat_Pulldown/0.jpg'}
-    ]},
-    {label:'Schiena', exercises:[
+    {label:'Dorsali + schiena (superset)', exercises:[
+      {name:'Lat machine avanti', sets:3, reps:'10 - 12', img:IMG+'Wide-Grip_Lat_Pulldown/0.jpg'},
       {name:'Rematore con manubrio un braccio (per lato)', sets:3, reps:'10 - 12', img:IMG+'One-Arm_Dumbbell_Row/0.jpg'}
     ]},
     {label:'Femorali e glutei', exercises:[
       {name:'Stacco rumeno con bilanciere', sets:3, reps:'10 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
     ]},
-    {label:'Bicipiti', exercises:[
-      {name:'Curl bicipiti con manubri', sets:3, reps:'12', img:IMG+'Dumbbell_Bicep_Curl/0.jpg'}
-    ]},
-    {label:'Addome', exercises:[
-      {name:'Crunch', sets:3, reps:'15 - 20', img:IMG+'Crunches/0.jpg'}
+    {label:'Bicipiti + addome (superset)', exercises:[
+      {name:'Curl bicipiti con manubri', sets:3, reps:'12', img:IMG+'Dumbbell_Bicep_Curl/0.jpg'},
+      {name:'Crunch', sets:2, reps:'15 - 20', img:IMG+'Crunches/0.jpg'}
     ]},
     {label:'Cardio', exercises:[
-      {name:'Tapis roulant — camminata veloce', sets:1, reps:'15:00', img:''}
+      {name:'Tapis roulant — camminata veloce', sets:1, reps:'03:30', img:''}
     ]}
   ]
 },{
@@ -523,7 +549,7 @@ const DEFAULT_SCHEDE = [{
       {name:'Spinte sopra la testa con manubri da seduta', sets:3, reps:'10 - 12', img:IMG+'Seated_Dumbbell_Press/0.jpg'}
     ]},
     {label:'Cardio', exercises:[
-      {name:'Vogatore a intervalli (1 min forte + 1 min piano)', sets:1, reps:'12:00', img:''}
+      {name:'Vogatore a intervalli (1 min forte + 1 min piano)', sets:1, reps:'06:00', img:''}
     ]}
   ]
 }];
@@ -566,6 +592,18 @@ if(!store.get('gg_seed_v4', false)){
   schede.forEach(function(s){ if(_own[s.id] && !s.owner) s.owner = _own[s.id]; });
   store.set('gg_schede', schede);
   store.set('gg_seed_v4', true);
+}
+// v5: riallinea le schede predefinite (s1-s6) alla nuova versione: immagini locali (offline)
+// e durata ~30 min. Mantiene il proprietario. Le schede create dall'utente restano intatte.
+if(!store.get('gg_seed_v5', false)){
+  DEFAULT_SCHEDE.forEach(function(d){
+    var i = schede.findIndex(function(x){ return x.id === d.id; });
+    var fresh = JSON.parse(JSON.stringify(d));
+    if(i >= 0){ fresh.owner = schede[i].owner || d.owner; schede[i] = fresh; }
+    else schede.push(fresh);
+  });
+  store.set('gg_schede', schede);
+  store.set('gg_seed_v5', true);
 }
 let sessions = store.get('gg_sessions', []);
 let lastLog = store.get('gg_last', {}); // nomeEsercizio -> [{kg,reps}, ...]
@@ -610,6 +648,72 @@ function imgTag(url){
 }
 function repsUnit(reps){ return /[:]|sec/i.test(String(reps)) ? '' : ' ripetizioni'; }
 
+/* ===== dettaglio esercizio: come si fa (mostra il movimento) ===== */
+let _exAnim = null;
+function frame1(img){ return img ? img.replace(/\/0\.jpg$/, '/1.jpg') : ''; }
+function openExDetail(img, name, sets, reps){
+  const sheet = document.getElementById('exSheet');
+  const imgEl = document.getElementById('exHeroImg');
+  const phEl  = document.getElementById('exHeroPh');
+  document.getElementById('exDetName').textContent = name || '';
+  const sub = [];
+  if(sets) sub.push(sets + (sets>1?' serie':' serie'));
+  if(reps) sub.push(reps + (repsUnit(reps)?' ripetizioni':''));
+  document.getElementById('exDetSub').textContent = sub.join(' · ');
+  clearInterval(_exAnim); _exAnim = null;
+  const f0 = img, f1 = frame1(img);
+  if(f0){
+    imgEl.style.display = ''; phEl.style.display = 'none';
+    imgEl.src = f0;
+    const pre = new Image();
+    pre.onload = ()=>{ let t=false; _exAnim = setInterval(()=>{ t=!t; imgEl.src = t?f1:f0; }, 900); };
+    pre.onerror = ()=>{ imgEl.src = f0; };  // se manca il 2° fotogramma resta fisso
+    pre.src = f1;
+  } else {
+    imgEl.style.display = 'none'; phEl.style.display = '';
+  }
+  sheet.classList.add('open');
+}
+function closeExDetail(){
+  document.getElementById('exSheet').classList.remove('open');
+  clearInterval(_exAnim); _exAnim = null;
+}
+function openExDetailFromScheda(gi, xi){
+  const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
+  const g = s.groups[gi]; if(!g) return;
+  const e = g.exercises[xi]; if(!e) return;
+  openExDetail(e.img, e.name, e.sets, e.reps);
+}
+function openExDetailFromWorkout(ei){
+  const ex = state.workout && state.workout.log[ei]; if(!ex) return;
+  openExDetail(ex.img, ex.name, ex.sets.length, ex.reps);
+}
+
+/* ===== stima durata della scheda (per il limite di ~30 min) ===== */
+const T_WORK = 45, T_REST = 75, T_TRANS = 15; // secondi: lavoro/serie, recupero, transizione
+function _oneSetWork(e){
+  const reps = String(e.reps||'');
+  const tm = reps.match(/(\d{1,2}):(\d{2})/);           // formato mm:ss
+  if(tm) return parseInt(tm[1])*60 + parseInt(tm[2]);
+  if(/sec/i.test(reps)){ const n = reps.match(/\d+/g); if(n){ const a=n.map(Number); return Math.round(a.reduce((x,y)=>x+y,0)/a.length); } return 40; }
+  return T_WORK;                                          // a ripetizioni
+}
+function _isCardioLong(e){ const tm = String(e.reps||'').match(/(\d{1,2}):(\d{2})/); return !!tm && parseInt(tm[1])>=3; }
+function groupSeconds(g){
+  const rounds = Math.max.apply(null, g.exercises.map(e=>Math.max(1, parseInt(e.sets)||1)));
+  let workPerRound = 0, allCardio = true;
+  g.exercises.forEach(e=>{ workPerRound += _oneSetWork(e); if(!_isCardioLong(e)) allCardio = false; });
+  const trans = (g.exercises.length - 1) * T_TRANS;
+  const rest  = allCardio ? 0 : T_REST;
+  return rounds * (workPerRound + trans + rest);
+}
+function schedaSeconds(s){
+  let tot = 0;
+  s.groups.forEach(g=>{ tot += groupSeconds(g) + T_TRANS; });
+  return Math.max(0, tot - T_REST);                      // togli l'ultimo recupero
+}
+function schedaMinutes(s){ return Math.round(schedaSeconds(s)/60); }
+
 /* ================= HOME ================= */
 function visibleSchede(){
   // mostra le schede senza proprietario (condivise) e quelle del profilo attivo
@@ -625,7 +729,7 @@ function renderHome(){
   el.innerHTML = list.map(s=>{
     const nEx = s.groups.reduce((a,g)=>a+g.exercises.length,0);
     return '<div class="card" onclick="openScheda(\''+s.id+'\')">'+
-      '<div class="t"><b>'+esc(s.name)+'</b><span>'+nEx+' esercizi · '+s.groups.length+' gruppi</span></div>'+
+      '<div class="t"><b>'+esc(s.name)+'</b><span>'+nEx+' esercizi · ~'+schedaMinutes(s)+' min</span></div>'+
       '<div class="chev">›</div></div>';
   }).join('');
 }
@@ -635,17 +739,20 @@ function openScheda(id){
   state.schedaId = id;
   const s = schede.find(x=>x.id===id); if(!s) return;
   document.getElementById('schedaTitle').textContent = s.name;
-  document.getElementById('schedaBody').innerHTML = s.groups.map(g=>
+  const nEx = s.groups.reduce((a,g)=>a+g.exercises.length,0);
+  const head = '<div class="sc-meta">⏱️ ~'+schedaMinutes(s)+' min · '+nEx+' esercizi<br><span class="sc-tap">Tocca un esercizio per vedere come si fa</span></div>';
+  document.getElementById('schedaBody').innerHTML = head + s.groups.map((g,gi)=>
     '<div class="sc-group">'+
       '<div class="sc-glabel">'+esc(g.label||'Superset')+'</div>'+
-      '<div class="sc-card">'+ g.exercises.map(e=>
-        '<div class="sc-ex">'+
+      '<div class="sc-card">'+ g.exercises.map((e,xi)=>
+        '<div class="sc-ex" onclick="openExDetailFromScheda('+gi+','+xi+')">'+
           '<div class="ex-img">'+imgTag(e.img)+'</div>'+
           '<div class="sc-info"><div class="sc-name">'+esc(e.name)+'</div>'+
           '<div class="sc-badges">'+
             '<span class="sc-badge">'+e.sets+' serie</span>'+
             '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
-          '</div></div>'+
+          '</div>'+
+          '<div class="howto">👁 Come si fa</div></div>'+
         '</div>').join('') +'</div>'+
     '</div>'
   ).join('');
@@ -688,7 +795,7 @@ function renderWorkout(){
   document.getElementById('woBody').innerHTML = w.log.map((ex,ei)=>{
     let ssHead = '';
     if(ex.group !== prevGroup){
-      if(gsize[ex.group] > 1) ssHead = '<div class="wo-sslabel">🔗 Superset — nessuna pausa tra gli esercizi, poi 2 min</div>';
+      if(gsize[ex.group] > 1) ssHead = '<div class="wo-sslabel">🔗 Superset — nessuna pausa tra gli esercizi, poi ~75 sec</div>';
       prevGroup = ex.group;
     }
     const isSS = gsize[ex.group] > 1;
@@ -696,7 +803,7 @@ function renderWorkout(){
     const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
     const doneCount = ex.sets.filter(s=>s.done).length;
     return ssHead + '<div class="wo-ex'+(isSS?' in-ss':'')+'">'+
-      '<div class="wo-head"><div class="ex-img">'+imgTag(ex.img)+'</div>'+
+      '<div class="wo-head"><div class="ex-img" onclick="openExDetailFromWorkout('+ei+')">'+imgTag(ex.img)+'</div>'+
       '<div class="wo-hinfo"><div class="n">'+esc(ex.name)+'</div>'+
       '<div class="m">'+ex.sets.length+' serie · obiettivo '+esc(ex.reps)+repsUnit(ex.reps)+'</div>'+
       '<div class="wo-prog">'+doneCount+'/'+ex.sets.length+' completate</div></div></div>'+
@@ -736,11 +843,11 @@ function toggleDone(ei,si){
   if(ex.sets[si].done){
     const mates = w.log.filter(x=>x.group === ex.group);
     if(mates.length > 1){
-      // superset: pausa 2 min solo quando tutti gli esercizi hanno chiuso questa serie
+      // superset: pausa ~75 sec solo quando tutti gli esercizi hanno chiuso questa serie
       const roundDone = mates.every(x=>!x.sets[si] || x.sets[si].done);
-      if(roundDone) timerStart(120);
+      if(roundDone) timerStart(75);
     } else {
-      timerStart(120);
+      timerStart(75);
     }
   }
   renderWorkout();
