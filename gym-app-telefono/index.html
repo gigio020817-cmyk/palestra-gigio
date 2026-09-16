@@ -259,10 +259,20 @@
   .supp-name{flex:1; font-size:15px}
   .supp-name.done{color:var(--muted); text-decoration:line-through}
   .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
-  .sc-alts{color:var(--muted); font-size:12px; margin-top:4px; line-height:1.3}
+  .sc-altmark{font-size:11px; color:var(--green); border:1px solid var(--green); border-radius:6px; padding:0 5px; vertical-align:middle}
+  .sc-altbtn{width:100%; display:flex; justify-content:space-between; align-items:center; background:var(--row); border:none; color:var(--muted);
+    font-size:13px; font-weight:600; padding:8px 14px; border-top:1px solid rgba(255,255,255,.06)}
+  .sc-altbtn.open{color:var(--txt)}
+  .sc-altbox{padding:6px 10px 10px; display:flex; flex-direction:column; gap:6px; background:var(--row)}
+  .sc-altopt{display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid transparent; border-radius:10px; padding:6px 8px; font-size:14px}
+  .sc-altopt.cur{border-color:var(--green)}
+  .sc-altname{flex:1} .sc-altname small{color:var(--muted)}
+  .sc-alteye{background:none; border:1px solid var(--muted); border-radius:8px; color:var(--txt); padding:4px 8px; font-size:14px}
+  .sc-althint{color:var(--muted); font-size:11.5px; text-align:center; margin-top:2px}
   .wo-alt.on{color:var(--green); border-color:var(--green)}
   .wo-altbox{display:flex; flex-direction:column; gap:6px; margin-top:8px}
   .wo-altopt{display:flex; align-items:center; gap:10px; background:var(--row); border:1px solid transparent; border-radius:10px; padding:6px 8px; color:var(--txt); font-size:14px; text-align:left}
+  .wo-altbox .sc-alteye{border-color:var(--muted)}
   .wo-altopt.cur{border-color:var(--green)}
   .ex-img.sm{width:44px; height:44px; flex-shrink:0}
   .ex-img.sm img{width:100%; height:100%; object-fit:cover; border-radius:8px}
@@ -667,7 +677,7 @@ const DEFAULT_SUPPS_ERJOLA = [
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
 // gg_last (pesi dell'ultima volta) e gg_sessions (storico) sono per-profilo: ognuno tiene i suoi.
-const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log','gg_last','gg_sessions']);
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log','gg_last','gg_sessions','gg_alt_choice']);
 let profiles = null, activeProfile = null;
 function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
 function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
@@ -874,7 +884,8 @@ function openExDetailFromScheda(gi, xi){
   const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
   const g = s.groups[gi]; if(!g) return;
   const e = g.exercises[xi]; if(!e) return;
-  openExDetail(e.img, e.name, e.sets, e.reps);
+  const ce = effEx(e);
+  openExDetail(ce.img, ce.name, e.sets, e.reps);
 }
 function openExDetailFromWorkout(ei){
   const ex = state.workout && state.workout.log[ei]; if(!ex) return;
@@ -927,6 +938,22 @@ function renderHome(){
 }
 
 /* ================= SCHEDA ================= */
+// variante scelta per ogni esercizio (ricordata, per profilo): nome base -> {name,img}
+function altChoices(){ return store.get('gg_alt_choice', {}) || {}; }
+function altOptions(e){ return [{name:e.name, img:e.img}].concat((e.alts||[]).map(a=>({name:a.name, img:a.img}))); }
+function effEx(e){ const c = altChoices()[e.name]; if(!c) return {name:e.name, img:e.img}; return altOptions(e).find(a=>a.name===c) || {name:e.name, img:e.img}; }
+function setAltChoice(base, name){ const c = altChoices(); if(name === base) delete c[base]; else c[base] = name; store.set('gg_alt_choice', c); }
+function toggleSchedaAlt(gi, xi){ const k = gi+'-'+xi; state.schedaAltOpen = (state.schedaAltOpen===k) ? null : k; openScheda(state.schedaId); }
+function pickSchedaAlt(gi, xi, name){
+  const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
+  const e = s.groups[gi].exercises[xi]; if(!e) return;
+  setAltChoice(e.name, name); state.schedaAltOpen = null; openScheda(state.schedaId);
+}
+function altDetail(gi, xi, name){
+  const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
+  const e = s.groups[gi].exercises[xi]; if(!e) return;
+  const o = altOptions(e).find(a=>a.name===name); if(o) openExDetail(o.img, o.name, e.sets, e.reps);
+}
 function openScheda(id){
   state.schedaId = id;
   const s = schede.find(x=>x.id===id); if(!s) return;
@@ -936,17 +963,26 @@ function openScheda(id){
   document.getElementById('schedaBody').innerHTML = head + s.groups.map((g,gi)=>
     '<div class="sc-group">'+
       '<div class="sc-glabel">'+esc(g.label||'Superset')+'</div>'+
-      '<div class="sc-card">'+ g.exercises.map((e,xi)=>
-        '<div class="sc-ex" onclick="openExDetailFromScheda('+gi+','+xi+')">'+
-          '<div class="ex-img">'+imgTag(e.img)+'</div>'+
-          '<div class="sc-info"><div class="sc-name">'+esc(e.name)+'</div>'+
+      '<div class="sc-card">'+ g.exercises.map((e,xi)=>{ const ce = effEx(e), isAlt = ce.name!==e.name, open = state.schedaAltOpen===(gi+'-'+xi);
+        return '<div class="sc-ex" onclick="openExDetailFromScheda('+gi+','+xi+')">'+
+          '<div class="ex-img">'+imgTag(ce.img)+'</div>'+
+          '<div class="sc-info"><div class="sc-name">'+esc(ce.name)+(isAlt?' <span class="sc-altmark">variante</span>':'')+'</div>'+
           '<div class="sc-badges">'+
             '<span class="sc-badge">'+e.sets+' serie</span>'+
             '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
           '</div>'+
-          (e.alts&&e.alts.length?'<div class="sc-alts">🔁 Varianti: '+esc(e.alts.map(a=>a.name).join(' · '))+'</div>':'')+
           '<div class="howto">👁 Come si fa</div></div>'+
-        '</div>').join('') +'</div>'+
+        '</div>'+
+        (e.alts&&e.alts.length?
+          '<button class="sc-altbtn'+(open?' open':'')+'" onclick="toggleSchedaAlt('+gi+','+xi+')">🔁 '+(isAlt?'Variante scelta: '+esc(ce.name):'Varianti ('+e.alts.length+')')+' <span>▾</span></button>'+
+          (open?'<div class="sc-altbox">'+altOptions(e).map(a=>
+            '<div class="sc-altopt'+(a.name===ce.name?' cur':'')+'">'+
+              '<span class="ex-img sm" onclick="altDetail('+gi+','+xi+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">'+imgTag(a.img)+'</span>'+
+              '<span class="sc-altname" onclick="pickSchedaAlt('+gi+','+xi+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">'+esc(a.name)+(a.name===e.name?' <small>(originale)</small>':'')+'</span>'+
+              '<button class="sc-alteye" onclick="altDetail('+gi+','+xi+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">👁</button>'+
+            '</div>').join('')+
+            '<div class="sc-althint">Tocca il nome per sceglierla, l’occhio per vedere come si fa</div></div>':'')
+        :''); }).join('') +'</div>'+
     '</div>'
   ).join('');
   show('scr-scheda');
@@ -959,11 +995,11 @@ function startWorkout(){
   s.groups.forEach((g,gi)=>g.exercises.forEach(e=>flat.push({e:e, gi:gi})));
   state.workout = {
     schedaId:s.id, schedaName:s.name, start:Date.now(),
-    log: flat.map(x=>{ const e = x.e; return {
-      name:e.name, img:e.img, reps:e.reps, group:x.gi, base:e.name, baseImg:e.img,
+    log: flat.map(x=>{ const e = x.e, ce = effEx(e); return {
+      name:ce.name, img:ce.img, reps:e.reps, group:x.gi, base:e.name, baseImg:e.img,
       alts:(e.alts||[]).map(a=>({name:a.name, img:a.img})),
       sets: Array.from({length:e.sets}, (_,i)=>{
-        const last = (lastLog[e.name]||[])[i] || {};
+        const last = (lastLog[ce.name]||[])[i] || {};
         return { kg:last.kg ?? '', reps:last.reps ?? '', done:false };
       })
     };})
@@ -1017,8 +1053,11 @@ function renderWorkout(){
       '</div>'+
       (state.altOpen===ei?'<div class="wo-altbox">'+
         [{name:ex.base, img:ex.baseImg}].concat(ex.alts).map(a=>
-          '<button class="wo-altopt'+(a.name===ex.name?' cur':'')+'" onclick="pickAlt('+ei+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">'+
-          '<span class="ex-img sm">'+imgTag(a.img)+'</span><span>'+esc(a.name)+'</span></button>').join('')+
+          '<div class="wo-altopt'+(a.name===ex.name?' cur':'')+'">'+
+          '<span class="ex-img sm" onclick="openExDetail(\''+esc(a.img)+'\',\''+esc(a.name).replace(/'/g,'\\\'')+'\','+ex.sets.length+',\''+esc(ex.reps)+'\')">'+imgTag(a.img)+'</span>'+
+          '<span class="sc-altname" onclick="pickAlt('+ei+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">'+esc(a.name)+'</span>'+
+          '<button class="sc-alteye" onclick="openExDetail(\''+esc(a.img)+'\',\''+esc(a.name).replace(/'/g,'\\\'')+'\','+ex.sets.length+',\''+esc(ex.reps)+'\')">👁</button></div>').join('')+
+        '<div class="sc-althint">Tocca il nome per sceglierla, l’occhio per vedere come si fa</div>'+
       '</div>':'')+
     '</div>';
   }).join('');
@@ -1029,7 +1068,7 @@ function pickAlt(ei, name){
   const opt = [{name:ex.base, img:ex.baseImg}].concat(ex.alts).find(a=>a.name===name); if(!opt) return;
   // se non ha ancora segnato nulla, riporta i pesi dell'ultima volta dell'esercizio scelto
   const untouched = ex.sets.every(s=>!s.done && !s.kg && !s.reps);
-  ex.name = opt.name; ex.img = opt.img;
+  ex.name = opt.name; ex.img = opt.img; setAltChoice(ex.base, opt.name);
   if(untouched){ ex.sets = ex.sets.map((s,i)=>{ const last=(lastLog[opt.name]||[])[i]||{}; return {kg:last.kg??'', reps:last.reps??'', done:false}; }); }
   state.altOpen = null; renderWorkout();
 }
