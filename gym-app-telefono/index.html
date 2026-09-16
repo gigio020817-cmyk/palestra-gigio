@@ -259,6 +259,14 @@
   .supp-name{flex:1; font-size:15px}
   .supp-name.done{color:var(--muted); text-decoration:line-through}
   .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
+  .supp-occ{margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:12px; overflow:hidden}
+  .supp-occ-h{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--row);
+    border:none; color:var(--muted); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:9px 12px}
+  .supp-occ-c{transition:transform .2s}
+  .supp-occ.open .supp-occ-c{transform:rotate(180deg)}
+  .supp-occ-b{display:none; padding:0 12px 6px}
+  .supp-occ.open .supp-occ-b{display:block}
+  .supp-occ .supp-grp{margin-top:6px}
   .supp-i{width:22px; height:22px; border-radius:50%; border:1px solid var(--muted); background:none; color:var(--muted); font-size:12px; font-weight:700; flex-shrink:0; padding:0}
   .supp-rep{color:var(--muted); font-size:13px; margin-top:9px; line-height:1.4}
   .supp-grp{color:var(--green); font-size:12px; font-weight:700; text-transform:uppercase;
@@ -630,7 +638,12 @@ const DEFAULT_SUPPS_GIGIO = [
   {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'30 g', optional:true, note:'In 250 ml di latte o acqua: a colazione se non mangi proteine, oppure entro 1 h dopo l’allenamento'},
   {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Un misurino ogni giorno, anche a riposo, sempre alla stessa ora: nello shake o in un bicchiere d’acqua. Bevi un bicchiere in più'},
   {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'30–40 g', optional:true, note:'In latte: nel turno quando salti il pasto, o prima di dormire'},
-  {name:'Ashwagandha', when:'Sera', dose:'', note:'30–60 min prima di dormire, dose da etichetta'}
+  {name:'Ashwagandha', when:'Sera', dose:'', note:'30–60 min prima di dormire, dose da etichetta'},
+  {name:'Omega 3', when:'Quando serve', dose:'', note:'Con un pasto che contiene grassi (assorbe meglio). Nei giorni in cui non mangi pesce'},
+  {name:'ZMA', when:'Quando serve', dose:'', note:'A stomaco vuoto (1–2 h dai pasti), lontano dal calcio. ⚠️ Ha zinco come il multivitaminico: non prenderli insieme tutti i giorni'},
+  {name:'Psillo (fibra)', when:'Quando serve', dose:'', note:'Con un bicchiere d’acqua grande, lontano 1–2 h da altri integratori e farmaci'},
+  {name:'Garcinia Cambogia', when:'Da valutare', dose:'', note:'Evidenze deboli sul dimagrimento e possibili problemi al fegato: non è una priorità'},
+  {name:'Bromelina', when:'Da valutare', dose:'', note:'Non ancora presa. Digestiva → durante i pasti; antinfiammatoria → a stomaco vuoto tra i pasti'}
 ];
 // programma integratori predefinito di Erjola
 const DEFAULT_SUPPS_ERJOLA = [
@@ -748,12 +761,12 @@ if(!store.get('gg_supps_seed_v2', false)){
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
 }
-// v4: Multicentrum Uomo al posto del multivitaminico generico, dosi e note su come/quando prendere
-if(!store.get('gg_supps_seed_v4', false)){
+// v5: lista di routine + finestrella 'Quando serve' con le voci occasionali (omega 3, ZMA, psillo, garcinia, bromelina)
+if(!store.get('gg_supps_seed_v5', false)){
   const gk = 'gg_p_' + profiles[0] + '_gg_supps';
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
-  store.set('gg_supps_seed_v4', true);
+  store.set('gg_supps_seed_v5', true);
 }
 // carica il programma integratori di Erjola nel suo profilo (una volta sola)
 if(!store.get('gg_supps_erjola_v1', false)){
@@ -1872,14 +1885,16 @@ function renderSupps(){
   const daily  = supps.filter(isRoutine);
   const takenN = daily.filter(function(s){ return taken.indexOf(suppName(s)) > -1; }).length;
 
-  let body = '';
+  let body = '', occ = '';
   SUPP_ORDER.forEach(function(grp){
     const items = [];
     supps.forEach(function(s,i){ if(suppWhen(s) === grp) items.push({s:s, i:i}); });
     if(!items.length) return;
     const evalGrp = (grp === 'Da valutare');
-    body += '<div class="supp-grp'+(evalGrp?' eval':'')+'">'+esc(grp)+'</div>';
-    body += items.map(function(o){
+    const occGrp = (grp === 'Quando serve' || grp === 'Da valutare' || grp === 'Altro');
+    let html = '';
+    if(!(occGrp && grp === 'Quando serve')) html += '<div class="supp-grp'+(evalGrp?' eval':'')+'">'+esc(grp)+'</div>';
+    html += items.map(function(o){
       const s = o.s, i = o.i, nm = suppName(s), on = taken.indexOf(nm) > -1;
       const dose = suppDose(s), note = suppNote(s);
       const info = '<div class="supp-info">'+
@@ -1892,7 +1907,13 @@ function renderSupps(){
       return '<div class="supp-row'+(evalGrp?'':' noeval')+'">'+ chk + info + infoBtn +
         '<button class="supp-x" onclick="removeSupp('+i+')">✕</button></div>';
     }).join('');
+    if(occGrp) occ += html; else body += html;
   });
+  if(occ){
+    body += '<div class="supp-occ'+(suppOccOpen?' open':'')+'">'+
+      '<button class="supp-occ-h" onclick="toggleSuppOcc()"><span>Quando serve</span><span class="supp-occ-c">▾</span></button>'+
+      '<div class="supp-occ-b">'+occ+'</div></div>';
+  }
 
   const mancaN = daily.length - takenN;
   const rep = daily.length
@@ -1912,6 +1933,8 @@ function renderSupps(){
     '</div>';
 }
 function toggleSuppNote(i){ const n = document.getElementById('sn'+i); if(n) n.style.display = (n.style.display === 'none') ? 'block' : 'none'; }
+let suppOccOpen = false;
+function toggleSuppOcc(){ suppOccOpen = !suppOccOpen; renderSupps(); }
 function toggleSupp(i){
   const s = supps[i]; if(s === undefined || isEval(s)) return;
   const nm = suppName(s), d = todayStr();
