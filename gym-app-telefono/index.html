@@ -253,15 +253,16 @@
   .supp-count{margin-left:auto; color:var(--green); font-weight:700; font-size:15px}
   .supp-add{background:var(--green); color:#173324; border:none; width:30px; height:30px; border-radius:50%; font-size:19px; font-weight:700; line-height:1}
   .supp-empty{color:var(--muted); font-size:14px; padding:4px 0}
-  .supp-row{display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px solid rgba(255,255,255,.06)}
-  .supp-chk{width:30px; height:30px; border-radius:50%; border:2px solid var(--muted); background:transparent; color:transparent; font-size:16px; flex-shrink:0}
+  .supp-row{display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid rgba(255,255,255,.06)}
+  .supp-chk{width:26px; height:26px; border-radius:50%; border:2px solid var(--muted); background:transparent; color:transparent; font-size:16px; flex-shrink:0}
   .supp-chk.on{background:var(--green); border-color:var(--green); color:#173324}
-  .supp-name{flex:1; font-size:16px}
+  .supp-name{flex:1; font-size:15px}
   .supp-name.done{color:var(--muted); text-decoration:line-through}
   .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
+  .supp-i{width:22px; height:22px; border-radius:50%; border:1px solid var(--muted); background:none; color:var(--muted); font-size:12px; font-weight:700; flex-shrink:0; padding:0}
   .supp-rep{color:var(--muted); font-size:13px; margin-top:9px; line-height:1.4}
-  .supp-grp{color:var(--green); font-size:12.5px; font-weight:700; text-transform:uppercase;
-    letter-spacing:.4px; margin:12px 0 2px}
+  .supp-grp{color:var(--green); font-size:12px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.4px; margin:8px 0 0}
   .supp-grp.eval{color:#E7C36B}
   .supp-info{flex:1}
   .supp-info .supp-name{display:block}
@@ -625,15 +626,11 @@ const DEFAULT_SCHEDE = [{
 
 // programma integratori predefinito di Gigio (per-profilo: Erjola parte vuota e si fa la sua)
 const DEFAULT_SUPPS_GIGIO = [
-  {name:'Opti-Men (multivitaminico)', when:'Mattina', dose:'', note:'A stomaco pieno, con la colazione'},
-  {name:'Omega 3', when:'Mattina', dose:'', note:'Con un pasto che contiene grassi (assorbe meglio)'},
-  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Ogni giorno, anche a riposo. Conta la costanza, scegli un orario fisso'},
-  {name:'Proteine (shake)', when:'Durante la giornata', dose:'', note:'Dopo l’allenamento o per arrivare al fabbisogno proteico'},
-  {name:'ZMA', when:'Sera', dose:'', note:'A stomaco vuoto (1–2 h dai pasti), lontano dal calcio. ⚠️ Ha zinco come le Opti-Men: valuta di alternarli e senti il medico'},
-  {name:'Ashwagandha', when:'Sera', dose:'', note:'Prima di dormire, aiuta a gestire lo stress'},
-  {name:'Psillo (fibra)', when:'Quando serve', dose:'', note:'Con un bicchiere d’acqua grande, lontano 1–2 h da altri integratori e farmaci'},
-  {name:'Garcinia Cambogia', when:'Da valutare', dose:'', note:'Evidenze deboli sul dimagrimento e possibili problemi al fegato: non è una priorità'},
-  {name:'Bromelina', when:'Da valutare', dose:'', note:'Non ancora presa. Digestiva → durante i pasti; antinfiammatoria → a stomaco vuoto tra i pasti'}
+  {name:'Multivitaminico', when:'Mattina', dose:'', note:'Con la colazione, a stomaco pieno'},
+  {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'', optional:true, note:'Mattina o dopo l’allenamento. Col latte sazia di più; se gonfia, senza lattosio o acqua'},
+  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Ogni giorno, anche a riposo, a orario fisso. Bevi tanto'},
+  {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'', optional:true, note:'Nel turno quando non mangi, o la sera'},
+  {name:'Ashwagandha', when:'Sera', dose:'', note:'Prima di dormire, per lo stress'}
 ];
 // programma integratori predefinito di Erjola
 const DEFAULT_SUPPS_ERJOLA = [
@@ -750,6 +747,13 @@ if(!store.get('gg_supps_seed_v2', false)){
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
+}
+// v3: lista di Gigio ridotta allo stack attuale (multivitaminico, whey, creatina, caseine, ashwagandha)
+if(!store.get('gg_supps_seed_v3', false)){
+  const gk = 'gg_p_' + profiles[0] + '_gg_supps';
+  const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
+  _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
+  store.set('gg_supps_seed_v3', true);
 }
 // carica il programma integratori di Erjola nel suo profilo (una volta sola)
 if(!store.get('gg_supps_erjola_v1', false)){
@@ -1852,7 +1856,8 @@ function suppDose(s){ return (s && typeof s === 'object') ? (s.dose || '') : '';
 function suppNote(s){ return (s && typeof s === 'object') ? (s.note || '') : ''; }
 function isEval(s){ return suppWhen(s) === 'Da valutare'; }
 // "di routine" = da prendere ogni giorno (contano nel conteggio giornaliero e in "cosa dimentico")
-function isRoutine(s){ const w = suppWhen(s); return w === 'Mattina' || w === 'Durante la giornata' || w === 'Sera' || w === 'Abitudini'; }
+function isOptional(s){ return !!(s && typeof s === 'object' && s.optional); }
+function isRoutine(s){ if(isOptional(s)) return false; const w = suppWhen(s); return w === 'Mattina' || w === 'Durante la giornata' || w === 'Sera' || w === 'Abitudini'; }
 
 function renderSupps(){
   const el = document.getElementById('suppCard'); if(!el) return;
@@ -1880,10 +1885,11 @@ function renderSupps(){
       const info = '<div class="supp-info">'+
         '<span class="supp-name'+(on&&!evalGrp?' done':'')+'"'+(evalGrp?'':' onclick="toggleSupp('+i+')"')+'>'+esc(nm)+
           (dose?' <span class="supp-dose">'+esc(dose)+'</span>':'')+'</span>'+
-        (note?'<div class="supp-note">'+esc(note)+'</div>':'')+'</div>';
+        (note?'<div class="supp-note" id="sn'+i+'" style="display:none">'+esc(note)+'</div>':'')+'</div>';
+      const infoBtn = note ? '<button class="supp-i" onclick="toggleSuppNote('+i+')">i</button>' : '';
       const chk = evalGrp ? '<span class="supp-chk" style="opacity:.25">•</span>'
                           : '<button class="supp-chk'+(on?' on':'')+'" onclick="toggleSupp('+i+')">✓</button>';
-      return '<div class="supp-row'+(evalGrp?'':' noeval')+'">'+ chk + info +
+      return '<div class="supp-row'+(evalGrp?'':' noeval')+'">'+ chk + info + infoBtn +
         '<button class="supp-x" onclick="removeSupp('+i+')">✕</button></div>';
     }).join('');
   });
@@ -1896,9 +1902,6 @@ function renderSupps(){
   if(activeProfile === 'Erjola'){
     warn = '<div class="supp-warn">💧 <b>Acqua:</b> 1,5–2 L al giorno. Con lo psillo un bicchiere pieno (250 ml) per volta e bevi ancora dopo.<br>'+
       '⚠️ <b>Il ferro</b> può dare stitichezza: prendilo con vitamina C e lontano 1–2 h dallo psillo.</div>';
-  } else {
-    warn = '<div class="supp-warn">💧 <b>Bevi tanto:</b> creatina e psillo richiedono molta acqua.<br>'+
-      '⚠️ <b>Zinco doppio</b> (ZMA + Opti-Men): valuta col medico se alternarli.</div>';
   }
   el.innerHTML = '<div class="supp"><div class="supp-h"><span>💊 Integratori oggi</span>'+
     '<span class="supp-count">'+takenN+'/'+daily.length+'</span>'+
@@ -1908,6 +1911,7 @@ function renderSupps(){
     (rep?'<div class="supp-rep">'+rep+'</div>':'')+
     '</div>';
 }
+function toggleSuppNote(i){ const n = document.getElementById('sn'+i); if(n) n.style.display = (n.style.display === 'none') ? 'block' : 'none'; }
 function toggleSupp(i){
   const s = supps[i]; if(s === undefined || isEval(s)) return;
   const nm = suppName(s), d = todayStr();
