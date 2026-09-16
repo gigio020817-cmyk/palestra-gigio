@@ -1,4 +1,4 @@
-const CACHE = 'gigio-gym-v38';
+const CACHE = 'gigio-gym-v39';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './goku.jpg', './img/erjola-bg.jpg'];
 // immagini esercizi impacchettate: precaricate così funzionano OFFLINE (in palestra)
 const IMG_SHELL = [
@@ -30,6 +30,8 @@ const IMG_SHELL = [
   './img/exercises/Goblet_Squat/1.jpg',
   './img/exercises/Hammer_Curls/0.jpg',
   './img/exercises/Hammer_Curls/1.jpg',
+  './img/exercises/Lying_Triceps_Press/0.jpg',
+  './img/exercises/Lying_Triceps_Press/1.jpg',
   './img/exercises/Machine_Bench_Press/0.jpg',
   './img/exercises/Machine_Bench_Press/1.jpg',
   './img/exercises/One-Arm_Dumbbell_Row/0.jpg',

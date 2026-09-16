@@ -537,15 +537,15 @@ const DEFAULT_SCHEDE = [{
   groups:[
     {label:'Superset', exercises:[
       {name:'Front squat con bilanciere', sets:3, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
-      {name:'Stacco rumeno con bilanciere', sets:3, reps:'8 - 12', img:IMG+'Romanian_Deadlift/0.jpg'}
+      {name:'Ponte per glutei da terra con carico (bilanciere o manubrio sui fianchi)', sets:3, reps:'12 - 15', img:IMG+'Barbell_Glute_Bridge/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Affondi in movimento con manubri', sets:3, reps:'10 - 12', img:IMG+'Dumbbell_Lunges/0.jpg'},
-      {name:'Hip thrust con bilanciere', sets:3, reps:'10 - 12', img:IMG+'Barbell_Hip_Thrust/0.jpg'}
+      {name:'Affondi in movimento con manubri', sets:3, reps:'10 per gamba', img:IMG+'Dumbbell_Lunges/0.jpg'},
+      {name:'Stacco rumeno con bilanciere', sets:3, reps:'10', img:IMG+'Romanian_Deadlift/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Sollevamento polpacci in piedi a corpo libero', sets:3, reps:'15 - 20', img:IMG+'Standing_Calf_Raises/0.jpg'},
-      {name:'Plank con oscillazioni dei fianchi', sets:3, reps:'00:45', img:IMG+'Plank/0.jpg'}
+      {name:'French press con bilanciere EZ sdraiato', sets:3, reps:'10 - 12', img:IMG+'Lying_Triceps_Press/0.jpg'},
+      {name:'Plank con oscillazioni dei fianchi', sets:3, reps:'00:30', img:IMG+'Plank/0.jpg'}
     ]}
   ]
 },{
@@ -699,6 +699,19 @@ if(!store.get('gg_seed_v5', false)){
   store.set('gg_schede', schede);
   store.set('gg_seed_v5', true);
 }
+// v6: nuova scheda "Gambe" (s2) — sostituisce solo quella, mantenendo il proprietario.
+// Le altre schede, quelle create dall'utente e lo storico restano intatti.
+if(!store.get('gg_seed_v6', false)){
+  var _d2 = DEFAULT_SCHEDE.find(function(d){ return d.id === 's2'; });
+  if(_d2){
+    var _i2 = schede.findIndex(function(x){ return x.id === 's2'; });
+    var _f2 = JSON.parse(JSON.stringify(_d2));
+    if(_i2 >= 0){ _f2.owner = schede[_i2].owner || _d2.owner; schede[_i2] = _f2; }
+    else schede.push(_f2);
+    store.set('gg_schede', schede);
+  }
+  store.set('gg_seed_v6', true);
+}
 let sessions = [];
 let lastLog = {}; // nomeEsercizio -> [{kg,reps}, ...] (per-profilo, letto dopo l'attivazione del profilo)
 
@@ -790,7 +803,7 @@ function imgTag(url){
   if(url) return '<img src="'+esc(url)+'" loading="lazy" onerror="this.outerHTML=\'<div class=ph>🏋️</div>\'">';
   return '<div class="ph">🏋️</div>';
 }
-function repsUnit(reps){ return /[:]|sec/i.test(String(reps)) ? '' : ' ripetizioni'; }
+function repsUnit(reps){ return /[:]|sec|[a-z]/i.test(String(reps)) ? '' : ' ripetizioni'; } // niente unità se c'è già del testo (es. "10 per gamba")
 
 /* ===== dettaglio esercizio: come si fa (mostra il movimento) ===== */
 let _exAnim = null;
