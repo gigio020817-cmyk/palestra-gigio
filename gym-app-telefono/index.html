@@ -626,11 +626,11 @@ const DEFAULT_SCHEDE = [{
 
 // programma integratori predefinito di Gigio (per-profilo: Erjola parte vuota e si fa la sua)
 const DEFAULT_SUPPS_GIGIO = [
-  {name:'Multivitaminico', when:'Mattina', dose:'', note:'Con la colazione, a stomaco pieno'},
-  {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'', optional:true, note:'Mattina o dopo l’allenamento. Col latte sazia di più; se gonfia, senza lattosio o acqua'},
-  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Ogni giorno, anche a riposo, a orario fisso. Bevi tanto'},
-  {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'', optional:true, note:'Nel turno quando non mangi, o la sera'},
-  {name:'Ashwagandha', when:'Sera', dose:'', note:'Prima di dormire, per lo stress'}
+  {name:'Multicentrum Uomo', when:'Mattina', dose:'1 cpr', note:'A colazione, con il cibo (mai a stomaco vuoto). Prima finisci il Daily Pack'},
+  {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'30 g', optional:true, note:'In 250 ml di latte o acqua: a colazione se non mangi proteine, oppure entro 1 h dopo l’allenamento'},
+  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Un misurino ogni giorno, anche a riposo, sempre alla stessa ora: nello shake o in un bicchiere d’acqua. Bevi un bicchiere in più'},
+  {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'30–40 g', optional:true, note:'In latte: nel turno quando salti il pasto, o prima di dormire'},
+  {name:'Ashwagandha', when:'Sera', dose:'', note:'30–60 min prima di dormire, dose da etichetta'}
 ];
 // programma integratori predefinito di Erjola
 const DEFAULT_SUPPS_ERJOLA = [
@@ -748,12 +748,12 @@ if(!store.get('gg_supps_seed_v2', false)){
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
 }
-// v3: lista di Gigio ridotta allo stack attuale (multivitaminico, whey, creatina, caseine, ashwagandha)
-if(!store.get('gg_supps_seed_v3', false)){
+// v4: Multicentrum Uomo al posto del multivitaminico generico, dosi e note su come/quando prendere
+if(!store.get('gg_supps_seed_v4', false)){
   const gk = 'gg_p_' + profiles[0] + '_gg_supps';
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
-  store.set('gg_supps_seed_v3', true);
+  store.set('gg_supps_seed_v4', true);
 }
 // carica il programma integratori di Erjola nel suo profilo (una volta sola)
 if(!store.get('gg_supps_erjola_v1', false)){
@@ -1885,8 +1885,8 @@ function renderSupps(){
       const info = '<div class="supp-info">'+
         '<span class="supp-name'+(on&&!evalGrp?' done':'')+'"'+(evalGrp?'':' onclick="toggleSupp('+i+')"')+'>'+esc(nm)+
           (dose?' <span class="supp-dose">'+esc(dose)+'</span>':'')+'</span>'+
-        (note?'<div class="supp-note" id="sn'+i+'" style="display:none">'+esc(note)+'</div>':'')+'</div>';
-      const infoBtn = note ? '<button class="supp-i" onclick="toggleSuppNote('+i+')">i</button>' : '';
+        (note?'<div class="supp-note">'+esc(note)+'</div>':'')+'</div>';
+      const infoBtn = '';
       const chk = evalGrp ? '<span class="supp-chk" style="opacity:.25">•</span>'
                           : '<button class="supp-chk'+(on?' on':'')+'" onclick="toggleSupp('+i+')">✓</button>';
       return '<div class="supp-row'+(evalGrp?'':' noeval')+'">'+ chk + info + infoBtn +
