@@ -259,6 +259,13 @@
   .supp-name{flex:1; font-size:15px}
   .supp-name.done{color:var(--muted); text-decoration:line-through}
   .supp-x{background:none; border:none; color:var(--red); font-size:14px; opacity:.7}
+  .sc-alts{color:var(--muted); font-size:12px; margin-top:4px; line-height:1.3}
+  .wo-alt.on{color:var(--green); border-color:var(--green)}
+  .wo-altbox{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+  .wo-altopt{display:flex; align-items:center; gap:10px; background:var(--row); border:1px solid transparent; border-radius:10px; padding:6px 8px; color:var(--txt); font-size:14px; text-align:left}
+  .wo-altopt.cur{border-color:var(--green)}
+  .ex-img.sm{width:44px; height:44px; flex-shrink:0}
+  .ex-img.sm img{width:100%; height:100%; object-fit:cover; border-radius:8px}
   .supp-occ{margin-top:10px; border:1px solid rgba(255,255,255,.08); border-radius:12px; overflow:hidden}
   .supp-occ-h{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--row);
     border:none; color:var(--muted); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:9px 12px}
@@ -529,48 +536,48 @@ const DEFAULT_SCHEDE = [{
   id:'s1', owner:'Gigio', name:'Petto, spalle e tricipiti',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Chest press', sets:3, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
-      {name:'Lento avanti con bilanciere seduto', sets:3, reps:'8 - 10', img:IMG+'Barbell_Shoulder_Press/0.jpg'}
+      {alts:[{name:'Panca piana con bilanciere', img:IMG+'Barbell_Bench_Press_-_Medium_Grip/0.jpg'}, {name:'Piegamenti a terra', img:IMG+'Pushups/0.jpg'}], name:'Chest press', sets:3, reps:'8 - 10', img:IMG+'Machine_Bench_Press/0.jpg'},
+      {alts:[{name:'Shoulder press con manubri seduto', img:IMG+'Seated_Dumbbell_Press/0.jpg'}, {name:'Arnold press', img:IMG+'Arnold_Dumbbell_Press/0.jpg'}], name:'Lento avanti con bilanciere seduto', sets:3, reps:'8 - 10', img:IMG+'Barbell_Shoulder_Press/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Distensioni su panca piana con manubri', sets:3, reps:'8 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
-      {name:'Alzate laterali con manubri', sets:3, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
+      {alts:[{name:'Distensioni su panca inclinata con manubri', img:IMG+'Incline_Dumbbell_Press/0.jpg'}, {name:'Chest press', img:IMG+'Machine_Bench_Press/0.jpg'}], name:'Distensioni su panca piana con manubri', sets:3, reps:'8 - 12', img:IMG+'Dumbbell_Bench_Press/0.jpg'},
+      {alts:[{name:'Alzate laterali al cavo', img:IMG+'Cable_Seated_Lateral_Raise/0.jpg'}, {name:'Alzate frontali con manubri', img:IMG+'Front_Dumbbell_Raise/0.jpg'}], name:'Alzate laterali con manubri', sets:3, reps:'12 - 15', img:IMG+'Side_Lateral_Raise/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Croci alla pectoral machine', sets:3, reps:'10 - 12', img:IMG+'Butterfly/0.jpg'},
-      {name:'French press con manubri seduto due braccia', sets:3, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
+      {alts:[{name:'Croci con manubri su panca', img:IMG+'Dumbbell_Flyes/0.jpg'}, {name:'Croci ai cavi', img:IMG+'Cable_Crossover/0.jpg'}], name:'Croci alla pectoral machine', sets:3, reps:'10 - 12', img:IMG+'Butterfly/0.jpg'},
+      {alts:[{name:'Push-down al cavo', img:IMG+'Triceps_Pushdown/0.jpg'}, {name:'Dip alla panca', img:IMG+'Bench_Dips/0.jpg'}], name:'French press con manubri seduto due braccia', sets:3, reps:'10 - 12', img:IMG+'Seated_Triceps_Press/0.jpg'}
     ]}
   ]
 },{
   id:'s2', owner:'Gigio', name:'Gambe',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Front squat con bilanciere', sets:3, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
-      {name:'Ponte per glutei da terra con carico (bilanciere o manubrio sui fianchi)', sets:3, reps:'12 - 15', img:IMG+'Barbell_Glute_Bridge/0.jpg'}
+      {alts:[{name:'Goblet squat', img:IMG+'Goblet_Squat/0.jpg'}, {name:'Leg press', img:IMG+'Leg_Press/0.jpg'}], name:'Front squat con bilanciere', sets:3, reps:'8 - 10', img:IMG+'Front_Barbell_Squat/0.jpg'},
+      {alts:[{name:'Hip thrust con bilanciere', img:IMG+'Barbell_Hip_Thrust/0.jpg'}, {name:'Ponte glutei a una gamba', img:IMG+'Single_Leg_Glute_Bridge/0.jpg'}], name:'Ponte per glutei da terra con carico (bilanciere o manubrio sui fianchi)', sets:3, reps:'12 - 15', img:IMG+'Barbell_Glute_Bridge/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Affondi in movimento con manubri', sets:3, reps:'10 per gamba', img:IMG+'Dumbbell_Lunges/0.jpg'},
-      {name:'Stacco rumeno con bilanciere', sets:3, reps:'10', img:IMG+'Romanian_Deadlift/0.jpg'}
+      {alts:[{name:'Affondi indietro con manubri', img:IMG+'Dumbbell_Rear_Lunge/0.jpg'}, {name:'Step-up con manubri', img:IMG+'Dumbbell_Step_Ups/0.jpg'}], name:'Affondi in movimento con manubri', sets:3, reps:'10 per gamba', img:IMG+'Dumbbell_Lunges/0.jpg'},
+      {alts:[{name:'Stacco rumeno con manubri', img:IMG+'Stiff-Legged_Dumbbell_Deadlift/0.jpg'}, {name:'Leg curl sdraiato', img:IMG+'Lying_Leg_Curls/0.jpg'}], name:'Stacco rumeno con bilanciere', sets:3, reps:'10', img:IMG+'Romanian_Deadlift/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'French press con bilanciere EZ sdraiato', sets:3, reps:'10 - 12', img:IMG+'Lying_Triceps_Press/0.jpg'},
-      {name:'Plank con oscillazioni dei fianchi', sets:3, reps:'00:30', img:IMG+'Plank/0.jpg'}
+      {alts:[{name:'Push-down al cavo', img:IMG+'Triceps_Pushdown/0.jpg'}, {name:'French press con manubri seduto', img:IMG+'Seated_Triceps_Press/0.jpg'}], name:'French press con bilanciere EZ sdraiato', sets:3, reps:'10 - 12', img:IMG+'Lying_Triceps_Press/0.jpg'},
+      {alts:[{name:'Plank laterale', img:IMG+'Side_Bridge/0.jpg'}, {name:'Crunch', img:IMG+'Crunches/0.jpg'}], name:'Plank con oscillazioni dei fianchi', sets:3, reps:'00:30', img:IMG+'Plank/0.jpg'}
     ]}
   ]
 },{
   id:'s3', owner:'Gigio', name:'Schiena, dorsali posteriori, bicipiti',
   groups:[
     {label:'Superset', exercises:[
-      {name:'Lat machine presa inversa', sets:3, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
-      {name:'Rematore con kettlebell a un braccio', sets:3, reps:'8 - 12', img:IMG+'One-Arm_Kettlebell_Row/0.jpg'}
+      {alts:[{name:'Lat machine presa larga', img:IMG+'Wide-Grip_Lat_Pulldown/0.jpg'}, {name:'Trazioni alla sbarra', img:IMG+'Pullups/0.jpg'}], name:'Lat machine presa inversa', sets:3, reps:'8 - 12', img:IMG+'Underhand_Cable_Pulldowns/0.jpg'},
+      {alts:[{name:'Rematore con manubrio a un braccio', img:IMG+'One-Arm_Dumbbell_Row/0.jpg'}, {name:'Pulley basso', img:IMG+'Seated_Cable_Rows/0.jpg'}], name:'Rematore con kettlebell a un braccio', sets:3, reps:'8 - 12', img:IMG+'One-Arm_Kettlebell_Row/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Scrollate con bilanciere', sets:3, reps:'12 - 15', img:IMG+'Barbell_Shrug/0.jpg'},
-      {name:'Alzate posteriori con manubri', sets:3, reps:'12 - 15', img:IMG+'Seated_Bent-Over_Rear_Delt_Raise/0.jpg'}
+      {alts:[{name:'Scrollate con manubri', img:IMG+'Dumbbell_Shrug/0.jpg'}], name:'Scrollate con bilanciere', sets:3, reps:'12 - 15', img:IMG+'Barbell_Shrug/0.jpg'},
+      {alts:[{name:'Face pull al cavo', img:IMG+'Face_Pull/0.jpg'}, {name:'Reverse fly alla macchina', img:IMG+'Reverse_Machine_Flyes/0.jpg'}], name:'Alzate posteriori con manubri', sets:3, reps:'12 - 15', img:IMG+'Seated_Bent-Over_Rear_Delt_Raise/0.jpg'}
     ]},
     {label:'Superset', exercises:[
-      {name:'Curl con bilanciere EZ', sets:3, reps:'10 - 12', img:IMG+'EZ-Bar_Curl/0.jpg'},
-      {name:'Hammer curl con manubri', sets:3, reps:'10 - 12', img:IMG+'Hammer_Curls/0.jpg'}
+      {alts:[{name:'Curl con manubri', img:IMG+'Dumbbell_Bicep_Curl/0.jpg'}, {name:'Curl al cavo in piedi', img:IMG+'Standing_Biceps_Cable_Curl/0.jpg'}], name:'Curl con bilanciere EZ', sets:3, reps:'10 - 12', img:IMG+'EZ-Bar_Curl/0.jpg'},
+      {alts:[{name:'Curl concentrato', img:IMG+'Concentration_Curls/0.jpg'}, {name:'Curl su panca inclinata', img:IMG+'Incline_Dumbbell_Curl/0.jpg'}], name:'Hammer curl con manubri', sets:3, reps:'10 - 12', img:IMG+'Hammer_Curls/0.jpg'}
     ]}
   ]
 },{
@@ -708,6 +715,17 @@ if(!store.get('gg_seed_v5', false)){
   });
   store.set('gg_schede', schede);
   store.set('gg_seed_v5', true);
+}
+// v7: varianti (alts) sulle schede di Gigio s1-s3, mantenendo il proprietario. Storico intatto.
+if(!store.get('gg_seed_v7', false)){
+  ['s1','s2','s3'].forEach(function(id){
+    var d = DEFAULT_SCHEDE.find(function(x){ return x.id === id; }); if(!d) return;
+    var i = schede.findIndex(function(x){ return x.id === id; });
+    var f = JSON.parse(JSON.stringify(d));
+    if(i >= 0){ f.owner = schede[i].owner || d.owner; schede[i] = f; } else schede.push(f);
+  });
+  store.set('gg_schede', schede);
+  store.set('gg_seed_v7', true);
 }
 // v6: nuova scheda "Gambe" (s2) — sostituisce solo quella, mantenendo il proprietario.
 // Le altre schede, quelle create dall'utente e lo storico restano intatti.
@@ -926,6 +944,7 @@ function openScheda(id){
             '<span class="sc-badge">'+e.sets+' serie</span>'+
             '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
           '</div>'+
+          (e.alts&&e.alts.length?'<div class="sc-alts">🔁 Varianti: '+esc(e.alts.map(a=>a.name).join(' · '))+'</div>':'')+
           '<div class="howto">👁 Come si fa</div></div>'+
         '</div>').join('') +'</div>'+
     '</div>'
@@ -941,7 +960,8 @@ function startWorkout(){
   state.workout = {
     schedaId:s.id, schedaName:s.name, start:Date.now(),
     log: flat.map(x=>{ const e = x.e; return {
-      name:e.name, img:e.img, reps:e.reps, group:x.gi,
+      name:e.name, img:e.img, reps:e.reps, group:x.gi, base:e.name, baseImg:e.img,
+      alts:(e.alts||[]).map(a=>({name:a.name, img:a.img})),
       sets: Array.from({length:e.sets}, (_,i)=>{
         const last = (lastLog[e.name]||[])[i] || {};
         return { kg:last.kg ?? '', reps:last.reps ?? '', done:false };
@@ -993,9 +1013,25 @@ function renderWorkout(){
       '<div class="wo-setctl">'+
         '<button onclick="removeSet('+ei+')">− Serie</button>'+
         '<button onclick="addSet('+ei+')">＋ Serie</button>'+
+        (ex.alts&&ex.alts.length?'<button class="wo-alt'+(ex.name!==ex.base?' on':'')+'" onclick="toggleAltPicker('+ei+')">🔁 Variante</button>':'')+
       '</div>'+
+      (state.altOpen===ei?'<div class="wo-altbox">'+
+        [{name:ex.base, img:ex.baseImg}].concat(ex.alts).map(a=>
+          '<button class="wo-altopt'+(a.name===ex.name?' cur':'')+'" onclick="pickAlt('+ei+',\''+esc(a.name).replace(/'/g,'\\\'')+'\')">'+
+          '<span class="ex-img sm">'+imgTag(a.img)+'</span><span>'+esc(a.name)+'</span></button>').join('')+
+      '</div>':'')+
     '</div>';
   }).join('');
+}
+function toggleAltPicker(ei){ state.altOpen = (state.altOpen===ei) ? null : ei; renderWorkout(); }
+function pickAlt(ei, name){
+  const ex = state.workout.log[ei];
+  const opt = [{name:ex.base, img:ex.baseImg}].concat(ex.alts).find(a=>a.name===name); if(!opt) return;
+  // se non ha ancora segnato nulla, riporta i pesi dell'ultima volta dell'esercizio scelto
+  const untouched = ex.sets.every(s=>!s.done && !s.kg && !s.reps);
+  ex.name = opt.name; ex.img = opt.img;
+  if(untouched){ ex.sets = ex.sets.map((s,i)=>{ const last=(lastLog[opt.name]||[])[i]||{}; return {kg:last.kg??'', reps:last.reps??'', done:false}; }); }
+  state.altOpen = null; renderWorkout();
 }
 function addSet(ei){ state.workout.log[ei].sets.push({kg:'', reps:'', done:false}); renderWorkout(); }
 function removeSet(ei){
