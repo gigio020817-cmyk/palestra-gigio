@@ -123,6 +123,32 @@
   .btn-ghost{flex:1; background:var(--panel); color:var(--txt); border:1px solid var(--row);
     border-radius:var(--radius); padding:13px; font-size:16px; font-weight:600}
 
+  /* card "oggi": cosa tocca e come sto andando */
+  .today{background:var(--panel); border-radius:var(--radius); margin:12px 16px; padding:14px 16px; box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .today-h{color:var(--muted); font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px}
+  .today-main{display:flex; align-items:center; gap:12px}
+  .today-main .t{flex:1}
+  .today-main .t b{display:block; font-size:19px; line-height:1.2}
+  .today-main .t span{color:var(--muted); font-size:13.5px}
+  .today-go{background:var(--green); color:#173324; border:none; border-radius:12px; padding:11px 16px; font-size:15px; font-weight:700; white-space:nowrap}
+  .today-stats{display:flex; gap:8px; margin-top:12px}
+  .today-stat{flex:1; background:var(--row); border-radius:10px; padding:8px 6px; text-align:center}
+  .today-stat b{display:block; font-size:18px; color:var(--green)}
+  .today-stat b.warn{color:#E7C36B}
+  .today-stat span{color:var(--muted); font-size:11.5px; line-height:1.2; display:block}
+  .today-rest{color:var(--muted); font-size:13px; margin-top:8px}
+  /* alimentazione: regole di consultazione */
+  .food-rules{background:var(--panel); border-radius:0 0 var(--radius) var(--radius); margin:0; padding:6px 16px 14px}
+  .food-rule{display:flex; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,.06)}
+  .food-rule:first-child{border-top:none}
+  .food-rule .ic{font-size:24px; line-height:1; flex-shrink:0; width:30px; text-align:center}
+  .food-rule b{display:block; font-size:15px; margin-bottom:2px}
+  .food-rule span{color:var(--muted); font-size:13px; line-height:1.4}
+  .plate{display:flex; height:14px; border-radius:7px; overflow:hidden; margin-top:6px}
+  .plate div{height:100%} .plate .v{flex:2; background:var(--green)} .plate .p{flex:1; background:#E7C36B} .plate .c{flex:1; background:#8AB4F8}
+  .plate-lg{display:flex; gap:10px; font-size:11.5px; color:var(--muted); margin-top:4px}
+  .plate-lg i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle}
+
   /* acqua */
   .water{background:var(--panel); border-radius:var(--radius); margin:12px 16px 4px; padding:16px}
   .water-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:11px}
@@ -406,6 +432,7 @@
   <main>
     <div id="profileBar"></div>
     <div id="msgCard"></div>
+    <div id="todayCard"></div>
     <div class="acc" data-acc="water"><button class="acc-h" onclick="accToggle('water')"><span>💧 Acqua</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="waterCard"></div></div></div>
     <div class="acc" data-acc="weight"><button class="acc-h" onclick="accToggle('weight')"><span>⚖️ Peso</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="weightCard"></div></div></div>
     <div class="acc" data-acc="supp"><button class="acc-h" onclick="accToggle('supp')"><span>💊 Integratori</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="suppCard"></div></div></div>
@@ -418,6 +445,7 @@
         </div>
       </div>
     </div></div>
+    <div class="acc" data-acc="food"><button class="acc-h" onclick="accToggle('food')"><span>🍽️ Alimentazione</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="foodRules"></div></div></div>
   </main>
 </div>
 
@@ -655,6 +683,7 @@ const DEFAULT_SUPPS_GIGIO = [
   {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'30 g', optional:true, note:'In 250 ml di latte o acqua: a colazione se non mangi proteine, oppure entro 1 h dopo l’allenamento'},
   {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Un misurino ogni giorno, anche a riposo, sempre alla stessa ora: nello shake o in un bicchiere d’acqua. Bevi un bicchiere in più'},
   {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'30–40 g', optional:true, note:'In latte: nel turno quando salti il pasto, o prima di dormire'},
+  {name:'Magnesio bisglicinato', when:'Sera', dose:'', note:'Dopo cena o prima di dormire, dose da etichetta. Non insieme allo ZMA (ha già magnesio)'},
   {name:'Ashwagandha', when:'Sera', dose:'', note:'30–60 min prima di dormire, dose da etichetta'},
   {name:'Omega 3', when:'Quando serve', dose:'', note:'Con un pasto che contiene grassi (assorbe meglio). Nei giorni in cui non mangi pesce'},
   {name:'ZMA', when:'Quando serve', dose:'', note:'A stomaco vuoto (1–2 h dai pasti), lontano dal calcio. ⚠️ Ha zinco come il multivitaminico: non prenderli insieme tutti i giorni'},
@@ -789,12 +818,12 @@ if(!store.get('gg_supps_seed_v2', false)){
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
 }
-// v5: lista di routine + finestrella 'Quando serve' con le voci occasionali (omega 3, ZMA, psillo, garcinia, bromelina)
-if(!store.get('gg_supps_seed_v5', false)){
+// v6: + magnesio bisglicinato la sera. v5: lista di routine + finestrella 'Quando serve' con le voci occasionali (omega 3, ZMA, psillo, garcinia, bromelina)
+if(!store.get('gg_supps_seed_v6', false)){
   const gk = 'gg_p_' + profiles[0] + '_gg_supps';
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
-  store.set('gg_supps_seed_v5', true);
+  store.set('gg_supps_seed_v6', true);
 }
 // carica il programma integratori di Erjola nel suo profilo (una volta sola)
 if(!store.get('gg_supps_erjola_v1', false)){
@@ -935,6 +964,64 @@ function renderHome(){
       '<div class="t"><b>'+esc(s.name)+'</b><span>'+nEx+' esercizi · ~'+schedaMinutes(s)+' min</span></div>'+
       '<div class="chev">›</div></div>';
   }).join('');
+}
+
+/* ================= OGGI (cosa tocca, come sto andando) ================= */
+function localDay(d){ const x = new Date(d); return new Date(x.getFullYear(), x.getMonth(), x.getDate()); }
+function dayKey(d){ const x = localDay(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+// quale scheda tocca: la successiva all'ultima fatta, in rotazione sull'ordine della home
+function nextScheda(){
+  const list = visibleSchede(); if(!list.length) return null;
+  const last = sessions[0]; if(!last) return list[0];
+  const i = list.findIndex(s=>s.name === last.scheda);
+  return list[(i < 0 ? -1 : i) + 1] || list[0];
+}
+function workoutsThisWeek(){
+  const now = new Date(); const dow = (now.getDay()+6)%7;           // lunedì = 0
+  const mon = localDay(now); mon.setDate(mon.getDate()-dow);
+  return sessions.filter(s=> new Date(s.date) >= mon).length;
+}
+// giorni di fila con TUTTI gli integratori di routine spuntati (oggi conta solo se già completo)
+function suppStreak(){
+  const daily = supps.filter(isRoutine).map(suppName); if(!daily.length) return 0;
+  const full = function(k){ const t = suppsLog[k] || []; return daily.every(n=>t.indexOf(n) > -1); };
+  let d = new Date(); let n = 0;
+  if(!full(dayKey(d))) d.setDate(d.getDate()-1);                      // oggi non ancora finito: parto da ieri
+  while(full(dayKey(d))){ n++; d.setDate(d.getDate()-1); if(n > 999) break; }
+  return n;
+}
+function renderToday(){
+  const el = document.getElementById('todayCard'); if(!el) return;
+  const nx = nextScheda();
+  const last = sessions[0];
+  const lastTxt = last ? ('Ultimo allenamento: '+agoLabel(last.date)+' ('+esc(last.scheda)+')') : 'Nessun allenamento ancora: il primo lo scrivi tu 💪';
+  const wk = workoutsThisWeek(), goal = 3;
+  const streak = suppStreak();
+  const daysOff = last ? daysAgo(last.date) : null;
+  const restTxt = (daysOff !== null && daysOff >= 4) ? '<div class="today-rest">⚠️ Sono '+daysOff+' giorni che non ti alleni: bastano 5 minuti per iniziare, poi si vede.</div>' : '';
+  el.innerHTML = '<div class="today"><div class="today-h">Oggi</div>'+
+    (nx ? '<div class="today-main"><div class="t"><b>'+esc(nx.name)+'</b><span>'+lastTxt+'</span></div>'+
+          '<button class="today-go" onclick="openScheda(\''+nx.id+'\')">Vai ›</button></div>' : '')+
+    '<div class="today-stats">'+
+      '<div class="today-stat"><b'+(wk>=goal?'':' class="warn"')+'>'+wk+'/'+goal+'</b><span>allenamenti<br>questa settimana</span></div>'+
+      '<div class="today-stat"><b'+(streak>0?'':' class="warn"')+'>'+streak+'</b><span>giorni di fila<br>integratori</span></div>'+
+      '<div class="today-stat"><b>'+sessions.length+'</b><span>allenamenti<br>in totale</span></div>'+
+    '</div>'+ restTxt +'</div>';
+}
+
+/* ================= ALIMENTAZIONE (solo consultazione) ================= */
+function renderFoodRules(){
+  const el = document.getElementById('foodRules'); if(!el) return;
+  // le regole sono quelle di Gigio: sul profilo di Erjola la tendina non compare
+  const acc = document.querySelector('.acc[data-acc="food"]'); if(acc) acc.style.display = (activeProfile === profiles[0]) ? '' : 'none';
+  el.innerHTML = '<div class="food-rules">'+
+    '<div class="food-rule"><div class="ic">🍽️</div><div><b>Regola del piatto</b><span>Metà verdura, un quarto proteina, un quarto carboidrati.</span>'+
+      '<div class="plate"><div class="v"></div><div class="p"></div><div class="c"></div></div>'+
+      '<div class="plate-lg"><span><i style="background:var(--green)"></i>verdura ½</span><span><i style="background:#E7C36B"></i>proteina ¼</span><span><i style="background:#8AB4F8"></i>carbo ¼</span></div></div></div>'+
+    '<div class="food-rule"><div class="ic">🥩</div><div><b>Proteine: circa 150 g al giorno</b><span>Priorità a ogni pasto. Se non ci arrivi col cibo, shake (Micro Whey mattina/post, Micelle XL nel turno o sera).</span></div></div>'+
+    '<div class="food-rule"><div class="ic">🫒</div><div><b>Calorie buone e dense</b><span>Olio d’oliva a crudo, frutta secca, burro d’arachidi, una porzione vera di carboidrati. Servono nei giorni in cui mangi poco.</span></div></div>'+
+    '<div class="food-rule"><div class="ic">✅</div><div><b>Mangia pulito quando hai fame</b><span>Senza rincorrere numeri o orari. Il gonfiore migliora mangiando pulito.</span></div></div>'+
+    '</div>';
 }
 
 /* ================= SCHEDA ================= */
@@ -1121,7 +1208,7 @@ function finishWorkout(){
   state.workout = null;
   timerStop(); woClockStop();
   toast('Allenamento salvato 💪');
-  show('scr-home'); renderHome();
+  show('scr-home'); renderHome(); renderToday();
 }
 function confirmExit(){
   if(confirm('Uscire senza salvare l\'allenamento?')){ state.workout=null; timerStop(); woClockStop(); show('scr-scheda'); }
@@ -1840,7 +1927,7 @@ function switchProfile(name){
   activeProfile = name; store.set('gg_active_profile', name);
   reloadProfileData();
   applyBackground();
-  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps(); renderHome();
+  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps(); renderHome(); renderToday(); renderFoodRules();
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
 }
@@ -2017,7 +2104,7 @@ function toggleSupp(i){
   const idx = taken.indexOf(nm);
   if(idx > -1) taken.splice(idx,1); else taken.push(nm);
   suppsLog[d] = taken; store.set('gg_supps_log', suppsLog);
-  renderSupps();
+  renderSupps(); renderToday();
 }
 function addSupp(){
   const v = prompt('Nome integratore (es. Creatina):'); if(v === null) return;
@@ -2236,6 +2323,8 @@ renderProfileBar();
 renderMsgCard();
 renderSupps();
 renderHome();
+renderToday();
+renderFoodRules();
 renderWater();
 renderWeight();
 renderFoodHero();
