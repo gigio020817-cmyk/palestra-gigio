@@ -142,12 +142,54 @@
   .food-rule{display:flex; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,.06)}
   .food-rule:first-child{border-top:none}
   .food-rule .ic{font-size:24px; line-height:1; flex-shrink:0; width:30px; text-align:center}
-  .food-rule b{display:block; font-size:15px; margin-bottom:2px}
+  .food-rule > div > b{display:block; font-size:15px; margin-bottom:2px}
+  .food-rule span b{font-weight:700}
   .food-rule span{color:var(--muted); font-size:13px; line-height:1.4}
   .plate{display:flex; height:14px; border-radius:7px; overflow:hidden; margin-top:6px}
   .plate div{height:100%} .plate .v{flex:2; background:var(--green)} .plate .p{flex:1; background:#E7C36B} .plate .c{flex:1; background:#8AB4F8}
   .plate-lg{display:flex; gap:10px; font-size:11.5px; color:var(--muted); margin-top:4px}
   .plate-lg i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle}
+
+  /* ultima volta in scheda, storico esercizio, grafici */
+  .sc-last{color:var(--green); font-size:12.5px; margin-top:4px; line-height:1.3}
+  .sc-last.muted{color:var(--muted)}
+  .sc-last span, .lh-more{color:var(--muted); font-size:11.5px; margin-left:4px}
+  .last-hint{cursor:pointer}
+  .sheet{position:fixed; inset:0; z-index:35; display:none; background:rgba(10,12,22,.75); align-items:flex-end}
+  .sheet.open{display:flex}
+  .sheet-card{background:var(--panel); width:100%; border-radius:22px 22px 0 0; padding:16px 18px calc(18px + env(safe-area-inset-bottom)); max-height:85vh; overflow:auto}
+  .sheet-title{font-size:19px; font-weight:700}
+  .sheet-sub{color:var(--muted); font-size:13.5px; margin:4px 0 10px}
+  .sheet-close{width:100%; margin-top:12px; background:var(--row); color:var(--txt); border:none; border-radius:12px; padding:13px; font-size:16px; font-weight:600}
+  .exh-row{padding:9px 0; border-top:1px solid rgba(255,255,255,.06)}
+  .exh-d{color:var(--muted); font-size:12.5px}
+  .exh-s{font-size:14.5px; margin-top:2px}
+  .exh-b{color:var(--green); font-size:12.5px; font-weight:700; margin-top:2px}
+  .chart{margin:8px 0 4px}
+  .chart svg{width:100%; height:110px; display:block}
+  .chart-dates{display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-top:2px}
+  /* progressi */
+  .weight.prog{margin-top:0}
+  .w-big{font-size:26px; font-weight:800} .w-big small{font-size:14px; color:var(--muted); font-weight:600}
+  .prog-hint{background:rgba(126,217,167,.12); border:1px solid rgba(126,217,167,.4); color:#bfe9d2; border-radius:10px; padding:9px 11px; margin:0 16px 10px; font-size:12.5px; line-height:1.4}
+  .gallery{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px}
+  .gal-item{position:relative; border-radius:10px; overflow:hidden; background:var(--row); aspect-ratio:3/4}
+  .gal-item img{width:100%; height:100%; object-fit:cover; display:block}
+  .gal-cap{position:absolute; left:0; right:0; bottom:0; background:rgba(0,0,0,.55); color:#fff; font-size:11px; padding:3px 6px}
+  .gal-x{position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; border:none; background:rgba(0,0,0,.55); color:#fff; font-size:11px; padding:0}
+  .photo-view{margin:auto; padding:16px; width:100%; max-width:520px; text-align:center}
+  .photo-view img{max-width:100%; max-height:80vh; border-radius:14px; display:block; margin:0 auto}
+  .photo-cap{color:var(--muted); font-size:14px; margin-top:10px}
+  /* piano del mese */
+  .plan{background:var(--panel); border-radius:0 0 var(--radius) var(--radius); padding:10px 16px 14px}
+  .plan-now{background:var(--row); border-radius:10px; padding:9px 12px; font-size:14px; font-weight:600; margin-bottom:10px}
+  .plan-ph{border-left:3px solid var(--row); padding:4px 0 6px 12px; margin:10px 0; opacity:.75}
+  .plan-ph.cur{border-color:var(--green); opacity:1}
+  .plan-t{font-weight:700; font-size:15px; margin-bottom:4px}
+  .plan-ph.cur .plan-t{color:var(--green)}
+  .plan-i{color:var(--txt); font-size:13.5px; line-height:1.45; margin:5px 0}
+  .plan-i b{font-weight:700}
+  .plan-i.warn{background:rgba(231,195,107,.12); border:1px solid rgba(231,195,107,.35); border-radius:10px; padding:8px 10px; color:#EBD8A6}
 
   /* acqua */
   .water{background:var(--panel); border-radius:var(--radius); margin:12px 16px 4px; padding:16px}
@@ -434,7 +476,7 @@
     <div id="msgCard"></div>
     <div id="todayCard"></div>
     <div class="acc" data-acc="water"><button class="acc-h" onclick="accToggle('water')"><span>💧 Acqua</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="waterCard"></div></div></div>
-    <div class="acc" data-acc="weight"><button class="acc-h" onclick="accToggle('weight')"><span>⚖️ Peso</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="weightCard"></div></div></div>
+    <div class="acc" data-acc="weight"><button class="acc-h" onclick="accToggle('weight')"><span>📈 Progressi</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="weightCard"></div><div id="progressCard"></div></div></div>
     <div class="acc" data-acc="supp"><button class="acc-h" onclick="accToggle('supp')"><span>💊 Integratori</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="suppCard"></div></div></div>
     <div class="acc" data-acc="training"><button class="acc-h" onclick="accToggle('training')"><span>🏋️ Allenamento</span><span class="acc-c">▾</span></button><div class="acc-b">
       <div id="trainingSection">
@@ -446,6 +488,7 @@
       </div>
     </div></div>
     <div class="acc" data-acc="food"><button class="acc-h" onclick="accToggle('food')"><span>🍽️ Alimentazione</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="foodRules"></div></div></div>
+    <div class="acc" data-acc="plan"><button class="acc-h" onclick="accToggle('plan')"><span>🗓️ Piano del mese</span><span class="acc-c">▾</span></button><div class="acc-b"><div id="planBody"></div></div></div>
   </main>
 </div>
 
@@ -502,6 +545,9 @@
 
 
 <input type="file" accept="image/*" id="bgInput" style="display:none" onchange="onBgPicked(event)">
+<input type="file" accept="image/*" capture="environment" id="progPhotoInput" style="display:none" onchange="onProgPhotoPicked(event)">
+<!-- foto progressi a schermo intero -->
+<div id="photoSheet" class="sheet" onclick="closePhoto()"><div class="photo-view"><img id="photoBig" alt=""><div id="photoCap" class="photo-cap"></div></div></div>
 
 <!-- messaggi personali -->
 <div id="msgSheet">
@@ -552,6 +598,16 @@
     <div class="motiv-sub" id="motivSub"></div>
   </div>
   <div class="motiv-hint">tocca o scorri ← per tornare</div>
+</div>
+
+<!-- storico di un esercizio -->
+<div id="exHistSheet" class="sheet" onclick="if(event.target===this) closeExHistory()">
+  <div class="sheet-card">
+    <div class="sheet-title" id="exHistName"></div>
+    <div class="sheet-sub" id="exHistBest"></div>
+    <div id="exHistBody"></div>
+    <button class="sheet-close" onclick="closeExHistory()">Chiudi</button>
+  </div>
 </div>
 
 <!-- dettaglio esercizio: come si fa -->
@@ -679,12 +735,12 @@ const DEFAULT_SCHEDE = [{
 
 // programma integratori predefinito di Gigio (per-profilo: Erjola parte vuota e si fa la sua)
 const DEFAULT_SUPPS_GIGIO = [
-  {name:'Multicentrum Uomo', when:'Mattina', dose:'1 cpr', note:'A colazione, con il cibo (mai a stomaco vuoto). Prima finisci il Daily Pack'},
+  {name:'Creatina', when:'Mattina', dose:'3–5 g', note:'Un misurino ogni giorno, anche a riposo: nello shake o in un bicchiere d’acqua. Bevi un bicchiere in più'},
+  {name:'Multivitaminico (Multicentrum Uomo)', when:'Mattina', dose:'1 cpr', note:'A colazione, con il cibo, mai a stomaco vuoto'},
   {name:'Micro Whey (shake veloce)', when:'Mattina', dose:'30 g', optional:true, note:'In 250 ml di latte o acqua: a colazione se non mangi proteine, oppure entro 1 h dopo l’allenamento'},
-  {name:'Creatina', when:'Durante la giornata', dose:'3–5 g', note:'Un misurino ogni giorno, anche a riposo, sempre alla stessa ora: nello shake o in un bicchiere d’acqua. Bevi un bicchiere in più'},
   {name:'Micelle XL (shake lento)', when:'Durante la giornata', dose:'30–40 g', optional:true, note:'In latte: nel turno quando salti il pasto, o prima di dormire'},
-  {name:'Magnesio bisglicinato', when:'Sera', dose:'', note:'Dopo cena o prima di dormire, dose da etichetta. Non insieme allo ZMA (ha già magnesio)'},
   {name:'Ashwagandha', when:'Sera', dose:'', note:'30–60 min prima di dormire, dose da etichetta'},
+  {name:'Magnesio bisglicinato', when:'Sera', dose:'', note:'Dopo cena o prima di dormire, dose da etichetta. Non insieme allo ZMA (ha già magnesio)'},
   {name:'Omega 3', when:'Quando serve', dose:'', note:'Con un pasto che contiene grassi (assorbe meglio). Nei giorni in cui non mangi pesce'},
   {name:'ZMA', when:'Quando serve', dose:'', note:'A stomaco vuoto (1–2 h dai pasti), lontano dal calcio. ⚠️ Ha zinco come il multivitaminico: non prenderli insieme tutti i giorni'},
   {name:'Psillo (fibra)', when:'Quando serve', dose:'', note:'Con un bicchiere d’acqua grande, lontano 1–2 h da altri integratori e farmaci'},
@@ -706,7 +762,7 @@ const DEFAULT_SUPPS_ERJOLA = [
 const _mem = {}; // fallback in memoria se localStorage non è disponibile (es. navigazione privata)
 // chiavi che appartengono al SINGOLO profilo (persona). Solo le schede restano condivise.
 // gg_last (pesi dell'ultima volta) e gg_sessions (storico) sono per-profilo: ognuno tiene i suoi.
-const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log','gg_last','gg_sessions','gg_alt_choice']);
+const PROFILE_KEYS = new Set(['gg_weights','gg_water','gg_water_goal','gg_food_goals','gg_food_diary','gg_food_recent','gg_food_custom','gg_food_dishes','gg_food_profile','gg_message','gg_bg','gg_supps','gg_supps_log','gg_last','gg_sessions','gg_alt_choice','gg_waist','gg_photos']);
 let profiles = null, activeProfile = null;
 function pk(k){ return (activeProfile && PROFILE_KEYS.has(k)) ? ('gg_p_' + activeProfile + '_' + k) : k; }
 function rawGet(k){ try{ const v = localStorage.getItem(k); if(v != null) return JSON.parse(v); }catch(e){} return (k in _mem) ? _mem[k] : undefined; }
@@ -818,12 +874,12 @@ if(!store.get('gg_supps_seed_v2', false)){
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
   store.set('gg_supps_seed_v2', true);
 }
-// v6: + magnesio bisglicinato la sera. v5: lista di routine + finestrella 'Quando serve' con le voci occasionali (omega 3, ZMA, psillo, garcinia, bromelina)
-if(!store.get('gg_supps_seed_v6', false)){
+// v7: creatina spostata al mattino, 4 voci di routine (creatina, multivit, ashwagandha, magnesio). v6: + magnesio bisglicinato la sera. v5: lista di routine + finestrella 'Quando serve' con le voci occasionali (omega 3, ZMA, psillo, garcinia, bromelina)
+if(!store.get('gg_supps_seed_v7', false)){
   const gk = 'gg_p_' + profiles[0] + '_gg_supps';
   const seed = JSON.parse(JSON.stringify(DEFAULT_SUPPS_GIGIO));
   _mem[gk] = seed; try{ localStorage.setItem(gk, JSON.stringify(seed)); }catch(e){}
-  store.set('gg_supps_seed_v6', true);
+  store.set('gg_supps_seed_v7', true);
 }
 // carica il programma integratori di Erjola nel suo profilo (una volta sola)
 if(!store.get('gg_supps_erjola_v1', false)){
@@ -995,13 +1051,19 @@ function renderToday(){
   const nx = nextScheda();
   const last = sessions[0];
   const lastTxt = last ? ('Ultimo allenamento: '+agoLabel(last.date)+' ('+esc(last.scheda)+')') : 'Nessun allenamento ancora: il primo lo scrivi tu 💪';
-  const wk = workoutsThisWeek(), goal = 3;
+  const isGigio = (activeProfile === profiles[0]);
+  const ph = isGigio ? planPhase() : 'after';
+  const wk = workoutsThisWeek(), goal = (ph==='pre') ? 2 : 3;
   const streak = suppStreak();
   const daysOff = last ? daysAgo(last.date) : null;
-  const restTxt = (daysOff !== null && daysOff >= 4) ? '<div class="today-rest">⚠️ Sono '+daysOff+' giorni che non ti alleni: bastano 5 minuti per iniziare, poi si vede.</div>' : '';
+  let restTxt = '';
+  if(ph === 'recovery') restTxt = '<div class="today-rest">🩹 Recupero post-operazione: niente pesi né vogatore finché il chirurgo non dà l’ok. Pranzo completo + shake, le proteine servono a cicatrizzare.</div>';
+  else if(ph === 'pre') restTxt = '<div class="today-rest">🚣 Piano: 10 min di vogatore tranquillo alcune mattine + una scheda 1–2 volte a settimana. Niente apnea sui carichi pesanti.'+(daysOff !== null && daysOff >= 4 ? ' Sono '+daysOff+' giorni fermo: bastano 5 minuti.' : '')+'</div>';
+  else if(daysOff !== null && daysOff >= 4) restTxt = '<div class="today-rest">⚠️ Sono '+daysOff+' giorni che non ti alleni: bastano 5 minuti per iniziare, poi si vede.</div>';
   el.innerHTML = '<div class="today"><div class="today-h">Oggi</div>'+
-    (nx ? '<div class="today-main"><div class="t"><b>'+esc(nx.name)+'</b><span>'+lastTxt+'</span></div>'+
+    (nx && ph !== 'recovery' ? '<div class="today-main"><div class="t"><b>'+esc(nx.name)+'</b><span>'+lastTxt+'</span></div>'+
           '<button class="today-go" onclick="openScheda(\''+nx.id+'\')">Vai ›</button></div>' : '')+
+    (ph === 'recovery' ? '<div class="today-main"><div class="t"><b>Stop allenamento</b><span>'+lastTxt+'</span></div></div>' : '')+
     '<div class="today-stats">'+
       '<div class="today-stat"><b'+(wk>=goal?'':' class="warn"')+'>'+wk+'/'+goal+'</b><span>allenamenti<br>questa settimana</span></div>'+
       '<div class="today-stat"><b'+(streak>0?'':' class="warn"')+'>'+streak+'</b><span>giorni di fila<br>integratori</span></div>'+
@@ -1015,12 +1077,47 @@ function renderFoodRules(){
   // le regole sono quelle di Gigio: sul profilo di Erjola la tendina non compare
   const acc = document.querySelector('.acc[data-acc="food"]'); if(acc) acc.style.display = (activeProfile === profiles[0]) ? '' : 'none';
   el.innerHTML = '<div class="food-rules">'+
+    '<div class="food-rule"><div class="ic">🍛</div><div><b>La base: un pranzo completo vero</b><span>Carne o altra proteina + verdura + carboidrati + un filo d’olio. Nel resto della giornata le proteine arrivano dagli shake.</span></div></div>'+
     '<div class="food-rule"><div class="ic">🍽️</div><div><b>Regola del piatto</b><span>Metà verdura, un quarto proteina, un quarto carboidrati.</span>'+
       '<div class="plate"><div class="v"></div><div class="p"></div><div class="c"></div></div>'+
       '<div class="plate-lg"><span><i style="background:var(--green)"></i>verdura ½</span><span><i style="background:#E7C36B"></i>proteina ¼</span><span><i style="background:#8AB4F8"></i>carbo ¼</span></div></div></div>'+
-    '<div class="food-rule"><div class="ic">🥩</div><div><b>Proteine: circa 150 g al giorno</b><span>Priorità a ogni pasto. Se non ci arrivi col cibo, shake (Micro Whey mattina/post, Micelle XL nel turno o sera).</span></div></div>'+
+    '<div class="food-rule"><div class="ic">🥩</div><div><b>Proteine: circa 150 g al giorno</b><span>Priorità a ogni pasto. Se non ci arrivi col cibo: Micro Whey mattina o post-allenamento, Micelle XL nel turno o la sera.</span></div></div>'+
     '<div class="food-rule"><div class="ic">🫒</div><div><b>Calorie buone e dense</b><span>Olio d’oliva a crudo, frutta secca, burro d’arachidi, una porzione vera di carboidrati. Servono nei giorni in cui mangi poco.</span></div></div>'+
-    '<div class="food-rule"><div class="ic">✅</div><div><b>Mangia pulito quando hai fame</b><span>Senza rincorrere numeri o orari. Il gonfiore migliora mangiando pulito.</span></div></div>'+
+    '<div class="food-rule"><div class="ic">🌅</div><div><b>Mattina (stomaco delicato)</b><span>Acqua + yogurt proteico <b>prima</b> di caffè e sigaretta. Mai caffè e sigaretta a stomaco vuoto.</span></div></div>'+
+    '<div class="food-rule"><div class="ic">✅</div><div><b>Mangia pulito quando hai fame</b><span>Priorità alle proteine, senza rincorrere numeri o orari. Il gonfiore migliora mangiando pulito.</span></div></div>'+
+    '</div>';
+}
+
+/* ================= PIANO DEL MESE (solo consultazione) ================= */
+const PLAN_SURGERY = '2026-11-10';   // operazione setto nasale
+const PLAN_RECOVERY_WEEKS = 3;       // stop completo dopo l'operazione (o finché il chirurgo non dà l'ok)
+function planPhase(){
+  const today = localDay(new Date()), op = localDay(PLAN_SURGERY);
+  const end = new Date(op); end.setDate(end.getDate() + PLAN_RECOVERY_WEEKS*7);
+  if(today < op) return 'pre';
+  if(today < end) return 'recovery';
+  return 'after';
+}
+function daysTo(iso){ return Math.round((localDay(iso) - localDay(new Date()))/86400000); }
+function renderPlan(){
+  const el = document.getElementById('planBody'); if(!el) return;
+  const acc = document.querySelector('.acc[data-acc="plan"]'); if(acc) acc.style.display = (activeProfile === profiles[0]) ? '' : 'none';
+  const ph = planPhase(), dt = daysTo(PLAN_SURGERY);
+  const now = ph==='pre' ? '⏳ Oggi: fase di ripartenza, '+dt+(dt===1?' giorno':' giorni')+' all’operazione'
+           : ph==='recovery' ? '🩹 Oggi: recupero post-operazione ('+(-dt)+(dt===-1?' giorno':' giorni')+' fa). Stop allenamento'
+           : '🚀 Oggi: recupero finito, si riparte da una base migliore';
+  el.innerHTML = '<div class="plan">'+
+    '<div class="plan-now">'+now+'</div>'+
+    '<div class="plan-ph'+(ph==='pre'?' cur':'')+'"><div class="plan-t">1 · Da adesso al 10 novembre — ripartenza</div>'+
+      '<div class="plan-i">🎯 <b>Obiettivo:</b> ricreare l’abitudine, non spaccare. Costanza, non intensità.</div>'+
+      '<div class="plan-i">🚣 <b>Movimento:</b> 10 min di vogatore a ritmo tranquillo alcune mattine + la prima scheda (Giorno A) quando puoi, anche solo 1–2 volte a settimana.</div>'+
+      '<div class="plan-i">🍛 <b>Cibo:</b> pranzo completo come base + shake per le proteine.</div>'+
+      '<div class="plan-i warn">⚠️ <b>Setto deviato + sinusite:</b> niente sforzi in apnea con carichi massimali (squat e stacchi pesanti). Se il naso pulsa: alleggerisci e respira, non trattenere il fiato.</div></div>'+
+    '<div class="plan-ph'+(ph==='recovery'?' cur':'')+'"><div class="plan-t">2 · 10 novembre — operazione al setto nasale</div>'+
+      '<div class="plan-i">🛑 <b>Stop completo 2–3 settimane</b>, o finché il chirurgo non dà l’ok: niente pesi, niente vogatore, niente sforzi. All’inizio non soffiare il naso.</div>'+
+      '<div class="plan-i">🥩 <b>Continua</b> pranzo completo + shake: le proteine aiutano la cicatrizzazione.</div></div>'+
+    '<div class="plan-ph'+(ph==='after'?' cur':'')+'"><div class="plan-t">3 · Dopo il recupero</div>'+
+      '<div class="plan-i">💪 Si riparte, da una base migliore di oggi. Prima settimana carichi leggeri, poi si risale.</div></div>'+
     '</div>';
 }
 
@@ -1058,6 +1155,7 @@ function openScheda(id){
             '<span class="sc-badge">'+e.sets+' serie</span>'+
             '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
           '</div>'+
+          (lastLog[ce.name] ? '<div class="sc-last" onclick="event.stopPropagation(); openExHistory(\''+esc(ce.name).replace(/'/g,'\\\'')+'\')">📈 Ultima volta: '+esc(lastLog[ce.name].map(x=>(x.kg||'–')+' kg × '+(x.reps||'–')).join(' · '))+' <span>storico ›</span></div>' : '<div class="sc-last muted">Mai fatto: la prima volta la scrivi tu</div>')+
           '<div class="howto">👁 Come si fa</div></div>'+
         '</div>'+
         (e.alts&&e.alts.length?
@@ -1117,7 +1215,7 @@ function renderWorkout(){
     }
     const isSS = gsize[ex.group] > 1;
     const last = lastLog[ex.name];
-    const hint = last ? '<div class="last-hint">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +'</div>' : '';
+    const hint = last ? '<div class="last-hint" onclick="openExHistory(\''+esc(ex.name).replace(/'/g,'\\\'')+'\')">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +' <span class="lh-more">storico ›</span></div>' : '';
     const doneCount = ex.sets.filter(s=>s.done).length;
     return ssHead + '<div class="wo-ex'+(isSS?' in-ss':'')+'">'+
       '<div class="wo-head"><div class="ex-img" onclick="openExDetailFromWorkout('+ei+')">'+imgTag(ex.img)+'</div>'+
@@ -1242,6 +1340,51 @@ function beep(){
       o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+0.3);
     });
   }catch(e){}
+}
+
+/* ================= STORICO PER ESERCIZIO ================= */
+function exHistory(name){
+  // tutte le sessioni (più recente prima) in cui compare l'esercizio
+  const out = [];
+  sessions.forEach(function(sx){
+    (sx.log||[]).forEach(function(e){
+      if(e.name === name && e.sets && e.sets.length) out.push({date:sx.date, sets:e.sets});
+    });
+  });
+  return out;
+}
+function bestOf(sets){ let b = null; sets.forEach(function(x){ const kg = parseFloat(x.kg)||0, r = parseInt(x.reps)||0; if(kg>0 && (!b || kg>b.kg || (kg===b.kg && r>b.reps))) b = {kg:kg, reps:r}; }); return b; }
+function openExHistory(name){
+  const h = exHistory(name);
+  document.getElementById('exHistName').textContent = name;
+  let best = null; h.forEach(function(x){ const b = bestOf(x.sets); if(b && (!best || b.kg>best.kg || (b.kg===best.kg && b.reps>best.reps))) best = b; });
+  document.getElementById('exHistBest').textContent = best ? ('🏆 Record: '+best.kg+' kg × '+best.reps+' · '+h.length+(h.length===1?' sessione':' sessioni')) : 'Nessuna serie registrata';
+  // mini grafico del carico massimo per sessione (dal più vecchio)
+  const pts = h.slice().reverse().map(function(x){ const b = bestOf(x.sets); return b ? b.kg : null; }).filter(function(v){ return v!==null; });
+  const chart = pts.length >= 2 ? miniChart(pts, 'kg') : '';
+  document.getElementById('exHistBody').innerHTML = chart + (h.length ? h.map(function(x){
+    const b = bestOf(x.sets);
+    return '<div class="exh-row"><div class="exh-d">'+fmtDay(x.date)+'</div>'+
+      '<div class="exh-s">'+x.sets.map(function(st){ return (st.kg||'–')+' kg × '+(st.reps||'–'); }).join(' · ')+'</div>'+
+      (b ? '<div class="exh-b">max '+b.kg+' kg</div>' : '')+'</div>';
+  }).join('') : '<div class="empty">Fallo una volta e qui vedrai come cresce.</div>');
+  document.getElementById('exHistSheet').classList.add('open');
+}
+function closeExHistory(){ document.getElementById('exHistSheet').classList.remove('open'); }
+// grafico a linea semplice (SVG), nessuna libreria: funziona offline
+function miniChart(values, unit, labels){
+  const W = 320, H = 110, px = 10, py = 14;
+  const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  const span = (max - min) || 1;
+  const x = function(i){ return values.length === 1 ? W/2 : px + i*(W-2*px)/(values.length-1); };
+  const y = function(v){ return H - py - (v-min)*(H-2*py)/span; };
+  const d = values.map(function(v,i){ return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1); }).join(' ');
+  const dots = values.map(function(v,i){ return '<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="3.5" fill="var(--green)"/>'; }).join('');
+  const first = values[0], last = values[values.length-1];
+  const lbl = '<text x="'+px+'" y="'+(y(first)-7)+'" fill="#A7ADC6" font-size="11">'+first+(unit?' '+unit:'')+'</text>'+
+              '<text x="'+(W-px)+'" y="'+(y(last)-7)+'" fill="#7ED9A7" font-size="11" text-anchor="end" font-weight="700">'+last+(unit?' '+unit:'')+'</text>';
+  const dates = (labels && labels.length) ? '<div class="chart-dates"><span>'+esc(labels[0])+'</span><span>'+esc(labels[labels.length-1])+'</span></div>' : '';
+  return '<div class="chart"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><path d="'+d+'" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+dots+lbl+'</svg>'+dates+'</div>';
 }
 
 /* ================= STORICO ================= */
@@ -1406,7 +1549,7 @@ function addWeight(){
   if(!(kg > 0)){ toast('Inserisci un peso valido'); return; }
   weights.unshift({ date: new Date().toISOString(), kg: Math.round(kg * 10) / 10 });
   store.set('gg_weights', weights);
-  renderWeight();
+  renderWeight(); renderProgress();
   toast('Peso aggiornato ⚖️');
 }
 function toggleWeightHistory(){
@@ -1426,6 +1569,79 @@ function delWeight(i){
   store.set('gg_weights', weights);
   renderWeight();
   const h = document.getElementById('wHist'); if(h){ h.innerHTML = ''; toggleWeightHistory(); }
+}
+
+/* ================= PROGRESSI: girovita, foto, grafici ================= */
+let waist = store.get('gg_waist', []);   // [{date, cm}] più recente prima
+let photos = store.get('gg_photos', []); // [{date, data}] più recente prima (jpeg piccolo in base64)
+function addWaist(){
+  const v = prompt('Girovita oggi (cm), misurato all’ombelico, rilassato:', waist[0] ? waist[0].cm : '');
+  if(v === null) return;
+  const cm = parseFloat(String(v).replace(',', '.'));
+  if(!(cm > 0)){ toast('Inserisci una misura valida'); return; }
+  waist.unshift({ date:new Date().toISOString(), cm: Math.round(cm*10)/10 });
+  store.set('gg_waist', waist); renderProgress(); toast('Girovita salvato 📏');
+}
+function pickProgPhoto(){ document.getElementById('progPhotoInput').click(); }
+function onProgPhotoPicked(e){
+  const file = e.target.files && e.target.files[0]; e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    const img = new Image();
+    img.onload = function(){
+      // ridimensiona a max 640 px e comprime: ~40-60 KB a foto, così ne stanno decine in localStorage
+      const max = 640; let w = img.width, h = img.height;
+      if(w > h && w > max){ h = Math.round(h*max/w); w = max; } else if(h >= w && h > max){ w = Math.round(w*max/h); h = max; }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const data = c.toDataURL('image/jpeg', 0.72);
+      photos.unshift({ date:new Date().toISOString(), data:data });
+      try{ localStorage.setItem(pk('gg_photos'), JSON.stringify(photos)); _mem[pk('gg_photos')] = photos; }
+      catch(err){ photos.shift(); toast('Memoria piena: cancella qualche foto vecchia'); return; }
+      renderProgress(); toast('Foto salvata 📷');
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function deletePhoto(i){
+  if(!confirm('Eliminare questa foto?')) return;
+  photos.splice(i,1); store.set('gg_photos', photos); renderProgress();
+}
+function openPhoto(i){
+  const ph = photos[i]; if(!ph) return;
+  document.getElementById('photoBig').src = ph.data;
+  document.getElementById('photoCap').textContent = fmtDay(ph.date) + ' · ' + agoLabel(ph.date);
+  document.getElementById('photoSheet').classList.add('open');
+}
+function closePhoto(){ document.getElementById('photoSheet').classList.remove('open'); }
+function weeklyHint(){
+  const lastW = weights[0] ? daysAgo(weights[0].date) : 99, lastC = waist[0] ? daysAgo(waist[0].date) : 99, lastP = photos[0] ? daysAgo(photos[0].date) : 99;
+  const due = Math.min(lastW, lastC, lastP) >= 7;
+  return due ? '<div class="prog-hint">📅 È passata una settimana: segna peso, girovita e fai la foto (stessa ora, stessa luce, stesso posto).</div>' : '';
+}
+function renderProgress(){
+  const el = document.getElementById('progressCard'); if(!el) return;
+  // grafici: dal più vecchio al più recente, max ultime 16 misure
+  const wv = weights.slice(0,16).reverse(), cv = waist.slice(0,16).reverse();
+  const wChart = wv.length >= 2 ? miniChart(wv.map(x=>x.kg), 'kg', [fmtDay(wv[0].date), fmtDay(wv[wv.length-1].date)]) : '';
+  const cChart = cv.length >= 2 ? miniChart(cv.map(x=>x.cm), 'cm', [fmtDay(cv[0].date), fmtDay(cv[cv.length-1].date)]) : '';
+  const cLast = waist[0], cPrev = waist[1];
+  const cDelta = cPrev ? (cLast.cm - cPrev.cm) : null;
+  const cDeltaTxt = cDelta === null ? '' : (cDelta < 0 ? '<span class="w-delta down">▼ '+Math.abs(cDelta).toFixed(1)+' cm</span> · ' : cDelta > 0 ? '<span class="w-delta up">▲ '+cDelta.toFixed(1)+' cm</span> · ' : '<span class="w-delta">± 0 cm</span> · ');
+  const gallery = photos.length ? '<div class="gallery">'+photos.map(function(ph,i){
+      return '<div class="gal-item"><img src="'+ph.data+'" onclick="openPhoto('+i+')" loading="lazy"><div class="gal-cap">'+fmtDay(ph.date)+'</div><button class="gal-x" onclick="deletePhoto('+i+')">✕</button></div>';
+    }).join('')+'</div>' : '<div class="w-sub">Nessuna foto ancora. Una a settimana, sempre uguale: è il confronto che conta, non la singola foto.</div>';
+  el.innerHTML = weeklyHint() +
+    (wChart ? '<div class="weight prog"><div class="w-top"><div class="w-title">⚖️ Andamento peso</div><div class="w-sub">ultime '+wv.length+' misure</div></div>'+wChart+'</div>' : '') +
+    '<div class="weight prog"><div class="w-top"><div class="w-title">📏 Girovita</div>'+(cLast ? '<div class="w-big">'+cLast.cm+' <small>cm</small></div>' : '')+'</div>'+
+      (cLast ? '<div class="w-sub">'+cDeltaTxt+agoLabel(cLast.date)+'</div>' : '<div class="w-sub">Misura all’ombelico, a stomaco vuoto, senza tirare il metro.</div>')+
+      cChart +
+      '<div class="w-btns"><button onclick="addWaist()">Segna girovita</button></div></div>'+
+    '<div class="weight prog"><div class="w-top"><div class="w-title">📷 Foto</div><div class="w-sub">'+photos.length+(photos.length===1?' foto':' foto')+'</div></div>'+
+      gallery +
+      '<div class="w-btns"><button onclick="pickProgPhoto()">Scatta / scegli foto</button></div></div>';
 }
 
 /* ================= ALIMENTAZIONE ================= */
@@ -1923,11 +2139,13 @@ function reloadProfileData(){
   foodDate  = todayStr();
 }
 function switchProfile(name){
+  // (le variabili per-profilo vengono rilette sotto, dopo il cambio)
   if(profiles.indexOf(name) < 0) return;
   activeProfile = name; store.set('gg_active_profile', name);
   reloadProfileData();
   applyBackground();
-  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderSupps(); renderHome(); renderToday(); renderFoodRules();
+  waist = store.get('gg_waist', []); photos = store.get('gg_photos', []);
+  renderProfileBar(); renderMsgCard(); renderWater(); renderWeight(); renderProgress(); renderSupps(); renderHome(); renderToday(); renderFoodRules(); renderPlan();
   show('scr-home'); window.scrollTo(0,0);
   toast('Profilo: ' + name);
 }
@@ -2078,8 +2296,9 @@ function renderSupps(){
   }
 
   const mancaN = daily.length - takenN;
+  const stk = suppStreak();
   const rep = daily.length
-    ? (mancaN>0 ? '⏳ Ne mancano '+mancaN+' oggi' : '✅ Tutti presi oggi 💪')
+    ? (mancaN>0 ? '⏳ Ne mancano '+mancaN+' oggi' : '✅ Tutti presi oggi 💪') + (stk>0 ? ' · 🔥 '+stk+(stk===1?' giorno di fila':' giorni di fila') : '')
     : '';
   let warn = '';
   if(activeProfile === 'Erjola'){
@@ -2325,8 +2544,10 @@ renderSupps();
 renderHome();
 renderToday();
 renderFoodRules();
+renderPlan();
 renderWater();
 renderWeight();
+renderProgress();
 renderFoodHero();
 applyAcc();
 if('serviceWorker' in navigator){
