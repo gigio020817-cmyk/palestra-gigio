@@ -168,6 +168,15 @@
   .chart{margin:8px 0 4px}
   .chart svg{width:100%; height:110px; display:block}
   .chart-dates{display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-top:2px}
+  /* suggerimento di progressione */
+  .prog-tip{margin:6px 0 2px; border-radius:10px; padding:7px 10px; font-size:13px; line-height:1.35; background:rgba(126,217,167,.12); border:1px solid rgba(126,217,167,.35)}
+  .prog-tip b{display:block; color:var(--green)}
+  .prog-tip span{color:var(--muted); font-size:12.5px}
+  .prog-tip.rep{background:rgba(138,180,248,.12); border-color:rgba(138,180,248,.35)} .prog-tip.rep b{color:#8AB4F8}
+  .prog-tip.same{background:rgba(231,195,107,.12); border-color:rgba(231,195,107,.35)} .prog-tip.same b{color:#E7C36B}
+  .prog-tip.down{background:rgba(229,115,115,.12); border-color:rgba(229,115,115,.35)} .prog-tip.down b{color:var(--red)}
+  .sc-ex .prog-tip{padding:4px 8px; font-size:12px; margin:4px 0 0; display:inline-block}
+  .wo-ex .prog-tip{margin:0 14px 8px}
   /* progressi */
   .weight.prog{margin-top:0}
   .w-big{font-size:26px; font-weight:800} .w-big small{font-size:14px; color:var(--muted); font-weight:600}
@@ -1155,7 +1164,7 @@ function openScheda(id){
             '<span class="sc-badge">'+e.sets+' serie</span>'+
             '<span class="sc-badge alt">'+esc(e.reps)+(repsUnit(e.reps)?' rip':'')+'</span>'+
           '</div>'+
-          (lastLog[ce.name] ? '<div class="sc-last" onclick="event.stopPropagation(); openExHistory(\''+esc(ce.name).replace(/'/g,'\\\'')+'\')">📈 Ultima volta: '+esc(lastLog[ce.name].map(x=>(x.kg||'–')+' kg × '+(x.reps||'–')).join(' · '))+' <span>storico ›</span></div>' : '<div class="sc-last muted">Mai fatto: la prima volta la scrivi tu</div>')+
+          (lastLog[ce.name] ? '<div class="sc-last" onclick="event.stopPropagation(); openExHistory(\''+esc(ce.name).replace(/'/g,'\\\'')+'\')">📈 Ultima volta: '+esc(lastLog[ce.name].map(x=>(x.kg||'–')+' kg × '+(x.reps||'–')).join(' · '))+' <span>storico ›</span></div>' + progHtml(ce.name, e.reps, true) : '<div class="sc-last muted">Mai fatto: la prima volta la scrivi tu</div>')+
           '<div class="howto">👁 Come si fa</div></div>'+
         '</div>'+
         (e.alts&&e.alts.length?
@@ -1173,6 +1182,58 @@ function openScheda(id){
   show('scr-scheda');
 }
 
+/* ================= PROGRESSIONE (doppia progressione) ================= */
+// range di ripetizioni dal testo della scheda: "8 - 10" -> [8,10], "10" -> [10,10], "10 per gamba" -> [10,10]; tempo (00:30) -> null
+function repRange(reps){
+  const t = String(reps||''); if(/[:]|sec/i.test(t)) return null;
+  const n = (t.match(/\d+/g)||[]).map(Number); if(!n.length) return null;
+  return n.length >= 2 ? [Math.min(n[0],n[1]), Math.max(n[0],n[1])] : [n[0], n[0]];
+}
+// esercizi "pesanti" di gambe/schiena: step +5 kg, e niente aumenti nella fase pre-operazione (apnea)
+function isHeavyCompound(name){ return /squat|stacco|leg press|hip thrust|ponte per glutei|deadlift/i.test(name); }
+function kgStep(name){ return isHeavyCompound(name) ? 5 : 2.5; }
+// decide cosa fare oggi su un esercizio, guardando le ultime 2 sessioni in cui è stato fatto
+// ritorna {kind:'up'|'same'|'rep'|'down'|'none', kg, text, short}
+function progression(name, repsTarget){
+  const rng = repRange(repsTarget);
+  const h = exHistory(name);
+  if(!h.length || !rng) return {kind:'none'};
+  const lastSets = h[0].sets.filter(x=>x.kg||x.reps);
+  const kgs = lastSets.map(x=>parseFloat(x.kg)||0).filter(x=>x>0);
+  if(!kgs.length) return {kind:'none'};
+  const kg = Math.max.apply(null, kgs);
+  const reps = lastSets.map(x=>parseInt(x.reps)||0);
+  const allTop = reps.length && reps.every(r=>r >= rng[1]);
+  const anyUnder = reps.some(r=>r > 0 && r < rng[0]);
+  const phase = (activeProfile === profiles[0]) ? planPhase() : 'after';
+  if(phase === 'recovery') return {kind:'none'};
+  const step = kgStep(name);
+  if(allTop){
+    if(phase === 'pre' && isHeavyCompound(name))
+      return {kind:'same', kg:kg, short:'mantieni '+kg+' kg', text:'Hai fatto tutte le serie al massimo, ma fino all’operazione su questo esercizio non si sale: niente carichi in apnea. Tieni '+kg+' kg e respira.'};
+    const nk = kg + step;
+    return {kind:'up', kg:nk, short:'sali a '+nk+' kg', text:'Tutte le serie al massimo del range ('+rng[1]+'): oggi prova '+nk+' kg × '+rng[0]+'–'+rng[1]+'. È normale fare meno ripetizioni col peso nuovo.'};
+  }
+  if(anyUnder){
+    // due sessioni di fila sotto il range → scendi
+    const prev = h[1] ? h[1].sets.filter(x=>x.kg||x.reps) : [];
+    const prevKg = prev.length ? Math.max.apply(null, prev.map(x=>parseFloat(x.kg)||0)) : 0;
+    const prevUnder = prev.length && prevKg === kg && prev.some(x=>(parseInt(x.reps)||0) > 0 && (parseInt(x.reps)||0) < rng[0]);
+    if(prevUnder){
+      const nk = Math.max(0, Math.min(Math.round((kg*0.925)/2.5)*2.5, kg - step)); // −7,5% circa, e comunque almeno uno scalino in meno
+      return {kind:'down', kg:nk, short:'scendi a '+nk+' kg', text:'Due volte di fila sotto le '+rng[0]+' ripetizioni: oggi '+nk+' kg, pulito e dentro il range. Poi si risale.'};
+    }
+    return {kind:'same', kg:kg, short:'consolida '+kg+' kg', text:'Qualche serie sotto le '+rng[0]+' ripetizioni: stesso peso ('+kg+' kg), obiettivo arrivare a '+rng[0]+' in tutte le serie.'};
+  }
+  return {kind:'rep', kg:kg, short:'+1 rip a '+kg+' kg', text:'Dentro il range ma non al massimo: stesso peso ('+kg+' kg), prova a fare una ripetizione in più per serie. Quando arrivi a '+rng[1]+' in tutte, sale il peso.'};
+}
+function progHtml(name, repsTarget, compact){
+  const pr = progression(name, repsTarget); if(pr.kind === 'none') return '';
+  const ic = {up:'⬆️', rep:'➕', same:'🟰', down:'⬇️'}[pr.kind];
+  if(compact) return '<div class="prog-tip '+pr.kind+'">'+ic+' Oggi: '+esc(pr.short)+'</div>';
+  return '<div class="prog-tip '+pr.kind+'">'+ic+' <b>Oggi: '+esc(pr.short)+'</b><span>'+esc(pr.text)+'</span></div>';
+}
+
 /* ================= ALLENAMENTO ================= */
 function startWorkout(){
   const s = schede.find(x=>x.id===state.schedaId); if(!s) return;
@@ -1183,10 +1244,11 @@ function startWorkout(){
     log: flat.map(x=>{ const e = x.e, ce = effEx(e); return {
       name:ce.name, img:ce.img, reps:e.reps, group:x.gi, base:e.name, baseImg:e.img,
       alts:(e.alts||[]).map(a=>({name:a.name, img:a.img})),
-      sets: Array.from({length:e.sets}, (_,i)=>{
+      sets: (function(){ const pr = progression(ce.name, e.reps); return Array.from({length:e.sets}, (_,i)=>{
         const last = (lastLog[ce.name]||[])[i] || {};
-        return { kg:last.kg ?? '', reps:last.reps ?? '', done:false };
-      })
+        const kg = (pr.kind === 'up' || pr.kind === 'down') ? pr.kg : (last.kg ?? '');
+        return { kg:kg, reps:(pr.kind === 'up' || pr.kind === 'down') ? '' : (last.reps ?? ''), done:false };
+      }); })()
     };})
   };
   document.getElementById('woTitle').textContent = s.name;
@@ -1215,7 +1277,7 @@ function renderWorkout(){
     }
     const isSS = gsize[ex.group] > 1;
     const last = lastLog[ex.name];
-    const hint = last ? '<div class="last-hint" onclick="openExHistory(\''+esc(ex.name).replace(/'/g,'\\\'')+'\')">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +' <span class="lh-more">storico ›</span></div>' : '';
+    const hint = last ? '<div class="last-hint" onclick="openExHistory(\''+esc(ex.name).replace(/'/g,'\\\'')+'\')">Ultima volta: '+ last.map(s=>(s.kg||'–')+'kg × '+(s.reps||'–')).join(' · ') +' <span class="lh-more">storico ›</span></div>' + progHtml(ex.name, ex.reps, false) : '';
     const doneCount = ex.sets.filter(s=>s.done).length;
     return ssHead + '<div class="wo-ex'+(isSS?' in-ss':'')+'">'+
       '<div class="wo-head"><div class="ex-img" onclick="openExDetailFromWorkout('+ei+')">'+imgTag(ex.img)+'</div>'+
@@ -1254,7 +1316,7 @@ function pickAlt(ei, name){
   // se non ha ancora segnato nulla, riporta i pesi dell'ultima volta dell'esercizio scelto
   const untouched = ex.sets.every(s=>!s.done && !s.kg && !s.reps);
   ex.name = opt.name; ex.img = opt.img; setAltChoice(ex.base, opt.name);
-  if(untouched){ ex.sets = ex.sets.map((s,i)=>{ const last=(lastLog[opt.name]||[])[i]||{}; return {kg:last.kg??'', reps:last.reps??'', done:false}; }); }
+  if(untouched){ const pr = progression(opt.name, ex.reps); ex.sets = ex.sets.map((s,i)=>{ const last=(lastLog[opt.name]||[])[i]||{}; const up=(pr.kind==='up'||pr.kind==='down'); return {kg: up ? pr.kg : (last.kg??''), reps: up ? '' : (last.reps??''), done:false}; }); }
   state.altOpen = null; renderWorkout();
 }
 function addSet(ei){ state.workout.log[ei].sets.push({kg:'', reps:'', done:false}); renderWorkout(); }
